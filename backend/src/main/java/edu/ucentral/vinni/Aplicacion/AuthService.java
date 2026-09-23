@@ -1,13 +1,13 @@
-package edu.ucentral.vinni.service;
+package edu.ucentral.vinni.Aplicacion;
 
 import edu.ucentral.vinni.entity.Usuario;
 import edu.ucentral.vinni.repository.UsuarioRepository;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.Optional;
@@ -41,7 +41,6 @@ public class AuthService {
 
     @Transactional
     public Optional<Usuario> autenticar(String correo, String contrasena) {
-
         Optional<Usuario> usuario = usuarioRepository.buscarPorCorreo(correo.trim().toLowerCase());
 
         if (usuario.isEmpty()) {
@@ -59,9 +58,7 @@ public class AuthService {
         }
 
         String token = crearToken();
-
         usuarioEncontrado.setToken(token);
-
         usuarioRepository.persist(usuarioEncontrado);
 
         return Optional.of(usuarioEncontrado);
@@ -80,19 +77,16 @@ public class AuthService {
     }
 
     public Optional<Usuario> validarToken(String token) {
-
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
 
         Optional<Usuario> usuario = usuarioRepository.buscarPorToken(token);
-
         if (usuario.isEmpty()) {
             return Optional.empty();
         }
 
         Usuario usuarioEncontrado = usuario.get();
-
         if (!Boolean.TRUE.equals(usuarioEncontrado.getActivo())) {
             return Optional.empty();
         }
@@ -102,7 +96,6 @@ public class AuthService {
 
     @Transactional
     public boolean cerrarSesion(String token) {
-
         Optional<Usuario> usuario = usuarioRepository.buscarPorToken(token);
 
         if (usuario.isEmpty()) {
@@ -110,9 +103,7 @@ public class AuthService {
         }
 
         Usuario usuarioEncontrado = usuario.get();
-
         usuarioEncontrado.setToken(null);
-
         usuarioRepository.persist(usuarioEncontrado);
 
         return true;

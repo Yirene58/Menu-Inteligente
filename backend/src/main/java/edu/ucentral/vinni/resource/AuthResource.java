@@ -1,7 +1,7 @@
 package edu.ucentral.vinni.resource;
 
+import edu.ucentral.vinni.Aplicacion.AuthService;
 import edu.ucentral.vinni.entity.Usuario;
-import edu.ucentral.vinni.service.AuthService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.HeaderParam;
