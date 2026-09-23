@@ -2,6 +2,7 @@ package edu.ucentral.vinni.resource;
 
 import edu.ucentral.vinni.Aplicacion.AuthService;
 import edu.ucentral.vinni.entity.Usuario;
+import edu.ucentral.vinni.security.AuthorizationTokens;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.HeaderParam;
@@ -106,12 +107,7 @@ public class AuthResource {
                     .build();
         }
 
-        String token = authorization;
-
-        if (authorization.startsWith("Bearer ")) {
-            token = authorization.substring(7);
-        }
-
+        String token = AuthorizationTokens.extraer(authorization);
         Optional<Usuario> usuario = authService.validarToken(token);
 
         if (usuario.isEmpty()) {
@@ -152,12 +148,7 @@ public class AuthResource {
                     .build();
         }
 
-        String token = authorization;
-
-        if (authorization.startsWith("Bearer ")) {
-            token = authorization.substring(7);
-        }
-
+        String token = AuthorizationTokens.extraer(authorization);
         boolean cerrado = authService.cerrarSesion(token);
 
         if (!cerrado) {

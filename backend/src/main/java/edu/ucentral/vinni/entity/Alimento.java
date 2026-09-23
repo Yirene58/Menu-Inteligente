@@ -1,5 +1,6 @@
 package edu.ucentral.vinni.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -24,10 +25,15 @@ public class Alimento {
     @Column(name = "id_alimento")
     private Long idAlimento;
 
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_usuario", nullable = false, foreignKey = @ForeignKey(name = "fk_alimento_usuario"))
+    private Usuario usuario;
+
     @Column(nullable = false, length = 150)
     private String nombre;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "id_categoria", nullable = false, foreignKey = @ForeignKey(name = "fk_alimento_categoria"))
     private CategoriaAlimento categoria;
 
@@ -59,6 +65,15 @@ public class Alimento {
 
     public void setIdAlimento(Long idAlimento) {
         this.idAlimento = idAlimento;
+    }
+
+    @JsonIgnore
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 
     public String getNombre() {

@@ -2,11 +2,20 @@ package edu.ucentral.vinni.resource;
 
 import edu.ucentral.vinni.entity.Alimento;
 import edu.ucentral.vinni.entity.CategoriaAlimento;
+import edu.ucentral.vinni.entity.Usuario;
 import edu.ucentral.vinni.repository.AlimentoRepository;
 import edu.ucentral.vinni.repository.CategoriaAlimentoRepository;
+import edu.ucentral.vinni.security.UsuarioAutenticado;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -25,15 +34,12 @@ public class AlimentoResource {
     @Inject
     CategoriaAlimentoRepository categoriaAlimentoRepository;
 
-    @GET
-    public List<Alimento> listar() {
-        return alimentoRepository.listAll();
-    }
+    @Inject
+    UsuarioAutenticado usuarioAutenticado;
 
     @GET
-    @Path("/categorias")
-    public List<CategoriaAlimento> listarCategorias() {
-        return categoriaAlimentoRepository.listAll();
+    public List<Alimento> listar() {
+        return alimentoRepository.listarDeUsuario(usuarioAutenticado.getId());
     }
 
     @POST
@@ -45,16 +51,19 @@ public class AlimentoResource {
             validarUnidadMedida(request != null ? request.unidadMedida : null);
             validarCategoria(request != null ? request.idCategoria : null);
 
-            CategoriaAlimento categoria = categoriaAlimentoRepository.findById(request.idCategoria);
-            if (categoria == null) {
+            Usuario usuario = usuarioAutenticado.get();
+            Optional<CategoriaAlimento> categoria = categoriaAlimentoRepository
+                    .buscarDeUsuario(request.idCategoria, usuario.getId());
+            if (categoria.isEmpty()) {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity(new ErrorResponse("La categoría seleccionada no existe."))
                         .build();
             }
 
             Alimento alimento = new Alimento();
+            alimento.setUsuario(usuario);
             alimento.setNombre(request.nombre.trim());
-            alimento.setCategoria(categoria);
+            alimento.setCategoria(categoria.get());
             alimento.setDescripcion(request.descripcion == null ? null : request.descripcion.trim());
             alimento.setCantidad(request.cantidad);
             alimento.setUnidadMedida(request.unidadMedida.trim().toLowerCase());
@@ -72,7 +81,7 @@ public class AlimentoResource {
     @GET
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") Long id) {
-        Optional<Alimento> alimento = alimentoRepository.findByIdOptional(id);
+        Optional<Alimento> alimento = alimentoRepository.buscarDeUsuario(id, usuarioAutenticado.getId());
         if (alimento.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(new ErrorResponse("Alimento no encontrado."))
@@ -91,15 +100,17 @@ public class AlimentoResource {
             validarUnidadMedida(request != null ? request.unidadMedida : null);
             validarCategoria(request != null ? request.idCategoria : null);
 
-            Optional<Alimento> alimentoOpt = alimentoRepository.findByIdOptional(id);
+            Long usuarioId = usuarioAutenticado.getId();
+            Optional<Alimento> alimentoOpt = alimentoRepository.buscarDeUsuario(id, usuarioId);
             if (alimentoOpt.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND)
                         .entity(new ErrorResponse("Alimento no encontrado."))
                         .build();
             }
 
-            CategoriaAlimento categoria = categoriaAlimentoRepository.findById(request.idCategoria);
-            if (categoria == null) {
+            Optional<CategoriaAlimento> categoria = categoriaAlimentoRepository
+                    .buscarDeUsuario(request.idCategoria, usuarioId);
+            if (categoria.isEmpty()) {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity(new ErrorResponse("La categoría seleccionada no existe."))
                         .build();
@@ -107,7 +118,7 @@ public class AlimentoResource {
 
             Alimento alimento = alimentoOpt.get();
             alimento.setNombre(request.nombre.trim());
-            alimento.setCategoria(categoria);
+            alimento.setCategoria(categoria.get());
             alimento.setDescripcion(request.descripcion == null ? null : request.descripcion.trim());
             alimento.setCantidad(request.cantidad);
             alimento.setUnidadMedida(request.unidadMedida.trim().toLowerCase());
@@ -124,7 +135,7 @@ public class AlimentoResource {
     @Path("/{id}")
     @Transactional
     public Response eliminar(@PathParam("id") Long id) {
-        Optional<Alimento> alimentoOpt = alimentoRepository.findByIdOptional(id);
+        Optional<Alimento> alimentoOpt = alimentoRepository.buscarDeUsuario(id, usuarioAutenticado.getId());
         if (alimentoOpt.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(new ErrorResponse("Alimento no encontrado."))
