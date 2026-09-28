@@ -44,6 +44,12 @@
         <artifactId>quarkus-rest-jackson</artifactId>
     </dependency>
 
+    <!-- OpenAPI y Swagger UI -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-smallrye-openapi</artifactId>
+    </dependency>
+
     <!-- Inyección de dependencias -->
     <dependency>
         <groupId>io.quarkus</groupId>

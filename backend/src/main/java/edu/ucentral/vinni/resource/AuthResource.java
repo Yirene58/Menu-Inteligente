@@ -20,227 +20,223 @@ import java.util.Optional;
 @Consumes(MediaType.APPLICATION_JSON)
 public class AuthResource {
 
-    @Inject
-    AuthService authService;
+        @Inject
+        AuthService authService;
 
-    @POST
-    @Path("/register")
-    public Response register(RegisterRequest request) {
-        if (request == null || request.nombre == null || request.nombre.isBlank() || !correoValido(request.correo) || !contrasenaValida(request.contrasena)) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(new ErrorResponse("Ingresa un correo válido y una contraseña de al menos 8 caracteres con letras y números"))
-                    .build();
-        }
-        Optional<Usuario> usuario = authService.registrar(request.correo, request.nombre, request.organizacion, request.contrasena);
-        if (usuario.isEmpty()) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity(new ErrorResponse("Ya existe una cuenta con este correo"))
-                    .build();
-        }
-        Usuario creado = usuario.get();
-        return Response.status(Response.Status.CREATED)
-                .entity(new LoginResponse(creado.getId(), creado.getCorreo(), creado.getToken(), "Cuenta creada. Revisa tu correo de bienvenida."))
-                .build();
-    }
-
-    // =========================
-    // LOGIN
-    // =========================
-
-    @POST
-    @Path("/login")
-    public Response login(LoginRequest request) {
-
-        if (request == null ||
-                request.correo == null ||
-                request.correo.isBlank() ||
-                request.contrasena == null ||
-                request.contrasena.isBlank()) {
-
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(new ErrorResponse(
-                            "Correo y contraseña son obligatorios"
-                    ))
-                    .build();
+        @POST
+        @Path("/register")
+        public Response register(RegisterRequest request) {
+                if (request == null || request.nombre == null || request.nombre.isBlank()
+                                || !correoValido(request.correo) || !contrasenaValida(request.contrasena)) {
+                        return Response.status(Response.Status.BAD_REQUEST)
+                                        .entity(new ErrorResponse(
+                                                        "Ingresa un correo válido y una contraseña de al menos 8 caracteres con letras y números"))
+                                        .build();
+                }
+                Optional<Usuario> usuario = authService.registrar(request.correo, request.nombre, request.organizacion,
+                                request.contrasena);
+                if (usuario.isEmpty()) {
+                        return Response.status(Response.Status.CONFLICT)
+                                        .entity(new ErrorResponse("Ya existe una cuenta con este correo"))
+                                        .build();
+                }
+                Usuario creado = usuario.get();
+                return Response.status(Response.Status.CREATED)
+                                .entity(new LoginResponse(creado.getId(), creado.getCorreo(), creado.getToken(),
+                                                "Cuenta creada. Revisa tu correo de bienvenida."))
+                                .build();
         }
 
-        Optional<Usuario> usuario = authService.autenticar(
-                request.correo,
-                request.contrasena
-        );
+        // =========================
+        // LOGIN
+        // =========================
 
-        if (usuario.isEmpty()) {
+        @POST
+        @Path("/login")
+        public Response login(LoginRequest request) {
 
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(new ErrorResponse(
-                            "Credenciales incorrectas"
-                    ))
-                    .build();
+                if (request == null ||
+                                request.correo == null ||
+                                request.correo.isBlank() ||
+                                request.contrasena == null ||
+                                request.contrasena.isBlank()) {
+
+                        return Response.status(Response.Status.BAD_REQUEST)
+                                        .entity(new ErrorResponse(
+                                                        "Correo y contraseña son obligatorios"))
+                                        .build();
+                }
+
+                Optional<Usuario> usuario = authService.autenticar(
+                                request.correo,
+                                request.contrasena);
+
+                if (usuario.isEmpty()) {
+
+                        return Response.status(Response.Status.UNAUTHORIZED)
+                                        .entity(new ErrorResponse(
+                                                        "Credenciales incorrectas"))
+                                        .build();
+                }
+
+                Usuario usuarioAutenticado = usuario.get();
+
+                return Response.ok(
+                                new LoginResponse(
+                                                usuarioAutenticado.getId(),
+                                                usuarioAutenticado.getCorreo(),
+                                                usuarioAutenticado.getToken(), "Inicio de sesión correcto"))
+                                .build();
         }
 
-        Usuario usuarioAutenticado = usuario.get();
+        // =========================
+        // VALIDAR TOKEN
+        // =========================
 
-        return Response.ok(
-                new LoginResponse(
-                        usuarioAutenticado.getId(),
-                        usuarioAutenticado.getCorreo(),
-                        usuarioAutenticado.getToken(), "Inicio de sesión correcto"
-                )
-        ).build();
-    }
+        @GET
+        @Path("/validate")
+        public Response validarToken(
+                        @HeaderParam("Authorization") String authorization) {
 
-    // =========================
-    // VALIDAR TOKEN
-    // =========================
+                if (authorization == null || authorization.isBlank()) {
 
-    @GET
-    @Path("/validate")
-    public Response validarToken(
-            @HeaderParam("Authorization") String authorization) {
+                        return Response.status(Response.Status.UNAUTHORIZED)
+                                        .entity(new ErrorResponse(
+                                                        "Token no proporcionado"))
+                                        .build();
+                }
 
-        if (authorization == null || authorization.isBlank()) {
+                String token = AuthorizationTokens.extraer(authorization);
+                Optional<Usuario> usuario = authService.validarToken(token);
 
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(new ErrorResponse(
-                            "Token no proporcionado"
-                    ))
-                    .build();
+                if (usuario.isEmpty()) {
+
+                        return Response.status(Response.Status.UNAUTHORIZED)
+                                        .entity(new ErrorResponse(
+                                                        "Token inválido o sesión expirada"))
+                                        .build();
+                }
+
+                Usuario usuarioAutenticado = usuario.get();
+
+                return Response.ok(
+                                new LoginResponse(
+                                                usuarioAutenticado.getId(),
+                                                usuarioAutenticado.getCorreo(),
+                                                usuarioAutenticado.getToken(), "Sesión válida"))
+                                .build();
         }
 
-        String token = AuthorizationTokens.extraer(authorization);
-        Optional<Usuario> usuario = authService.validarToken(token);
+        // =========================
+        // LOGOUT
+        // =========================
 
-        if (usuario.isEmpty()) {
+        @POST
+        @Path("/logout")
+        public Response logout(
+                        @HeaderParam("Authorization") String authorization) {
 
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(new ErrorResponse(
-                            "Token inválido o sesión expirada"
-                    ))
-                    .build();
+                if (authorization == null || authorization.isBlank()) {
+
+                        return Response.status(Response.Status.UNAUTHORIZED)
+                                        .entity(new ErrorResponse(
+                                                        "Token no proporcionado"))
+                                        .build();
+                }
+
+                String token = AuthorizationTokens.extraer(authorization);
+                boolean cerrado = authService.cerrarSesion(token);
+
+                if (!cerrado) {
+
+                        return Response.status(Response.Status.UNAUTHORIZED)
+                                        .entity(new ErrorResponse(
+                                                        "Token inválido"))
+                                        .build();
+                }
+
+                return Response.ok(
+                                new MessageResponse("Sesión cerrada correctamente")).build();
         }
 
-        Usuario usuarioAutenticado = usuario.get();
+        // =========================
+        // REQUEST LOGIN
+        // =========================
 
-        return Response.ok(
-                new LoginResponse(
-                        usuarioAutenticado.getId(),
-                        usuarioAutenticado.getCorreo(),
-                        usuarioAutenticado.getToken(), "Sesión válida"
-                )
-        ).build();
-    }
+        public static class LoginRequest {
 
-    // =========================
-    // LOGOUT
-    // =========================
+                public String correo;
+                public String contrasena;
 
-    @POST
-    @Path("/logout")
-    public Response logout(
-            @HeaderParam("Authorization") String authorization) {
-
-        if (authorization == null || authorization.isBlank()) {
-
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(new ErrorResponse(
-                            "Token no proporcionado"
-                    ))
-                    .build();
+                public LoginRequest() {
+                }
         }
 
-        String token = AuthorizationTokens.extraer(authorization);
-        boolean cerrado = authService.cerrarSesion(token);
+        public static class RegisterRequest {
+                public String correo;
+                public String nombre;
+                public String organizacion;
+                public String contrasena;
 
-        if (!cerrado) {
-
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(new ErrorResponse(
-                            "Token inválido"
-                    ))
-                    .build();
+                public RegisterRequest() {
+                }
         }
 
-        return Response.ok(
-                new MessageResponse("Sesión cerrada correctamente")
-        ).build();
-    }
-
-    // =========================
-    // REQUEST LOGIN
-    // =========================
-
-    public static class LoginRequest {
-
-        public String correo;
-        public String contrasena;
-
-        public LoginRequest() {
+        private boolean correoValido(String correo) {
+                return correo != null && correo.trim().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
         }
-    }
 
-    public static class RegisterRequest {
-        public String correo;
-        public String nombre;
-        public String organizacion;
-        public String contrasena;
-        public RegisterRequest() { }
-    }
-
-    private boolean correoValido(String correo) {
-        return correo != null && correo.trim().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
-    }
-
-    private boolean contrasenaValida(String contrasena) {
-        return contrasena != null && contrasena.length() >= 8
-                && contrasena.matches(".*[A-Za-z].*") && contrasena.matches(".*\\d.*");
-    }
-
-    // =========================
-    // RESPONSE LOGIN
-    // =========================
-
-    public static class LoginResponse {
-
-        public Long id;
-        public String correo;
-        public String token;
-        public String mensaje;
-
-        public LoginResponse(
-                Long id,
-                String correo,
-                String token, String mensaje) {
-
-            this.id = id;
-            this.correo = correo;
-            this.token = token;
-            this.mensaje = mensaje;
+        private boolean contrasenaValida(String contrasena) {
+                return contrasena != null && contrasena.length() >= 8
+                                && contrasena.matches(".*[A-Za-z].*") && contrasena.matches(".*\\d.*");
         }
-    }
 
-    // =========================
-    // RESPONSE ERROR
-    // =========================
+        // =========================
+        // RESPONSE LOGIN
+        // =========================
 
-    public static class ErrorResponse {
+        public static class LoginResponse {
 
-        public String mensaje;
+                public Long id;
+                public String correo;
+                public String token;
+                public String mensaje;
 
-        public ErrorResponse(String mensaje) {
-            this.mensaje = mensaje;
+                public LoginResponse(
+                                Long id,
+                                String correo,
+                                String token, String mensaje) {
+
+                        this.id = id;
+                        this.correo = correo;
+                        this.token = token;
+                        this.mensaje = mensaje;
+                }
         }
-    }
 
-    // =========================
-    // RESPONSE MESSAGE
-    // =========================
+        // =========================
+        // RESPONSE ERROR
+        // =========================
 
-    public static class MessageResponse {
+        public static class ErrorResponse {
 
-        public String mensaje;
+                public String mensaje;
 
-        public MessageResponse(String mensaje) {
-            this.mensaje = mensaje;
+                public ErrorResponse(String mensaje) {
+                        this.mensaje = mensaje;
+                }
         }
-    }
+
+        // =========================
+        // RESPONSE MESSAGE
+        // =========================
+
+        public static class MessageResponse {
+
+                public String mensaje;
+
+                public MessageResponse(String mensaje) {
+                        this.mensaje = mensaje;
+                }
+        }
 }
