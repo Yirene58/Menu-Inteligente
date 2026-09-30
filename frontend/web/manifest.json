@@ -1,0 +1,9 @@
+{
+  "name": "GestorTecno",
+  "short_name": "GestorTecno",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f7f8f3",
+  "theme_color": "#236b4a",
+  "description": "Gestiona tus alimentos y aprovecha mejor tu despensa."
+}

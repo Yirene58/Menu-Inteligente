@@ -1,0 +1,17 @@
+2026/09/21-18:29:00.321 7d4c Creating DB C:\Users\irene\AppData\Local\Temp\flutter_tools.cd087322\flutter_tools_chrome_device.9b2ee599\Default\IndexedDB\https_chat.deepseek.com_0.indexeddb.leveldb since it was missing.
+2026/09/21-18:29:00.333 7d4c Reusing MANIFEST C:\Users\irene\AppData\Local\Temp\flutter_tools.cd087322\flutter_tools_chrome_device.9b2ee599\Default\IndexedDB\https_chat.deepseek.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/09/21-18:29:00.859 9d0 Level-0 table #5: started
+2026/09/21-18:29:00.862 9d0 Level-0 table #5: 1888 bytes OK
+2026/09/21-18:29:00.868 9d0 Delete type=0 #3
+2026/09/21-18:29:00.868 3de4 Manual compaction at level-0 from '\x00\x02\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x03\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/09/21-18:30:39.231 1e50 Level-0 table #7: started
+2026/09/21-18:30:39.236 1e50 Level-0 table #7: 1633 bytes OK
+2026/09/21-18:30:39.240 1e50 Delete type=0 #4
+2026/09/21-18:30:39.240 1e50 Manual compaction at level-0 from '\x00\x03\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x04\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/09/21-18:30:39.270 1e50 Manual compaction at level-0 from '\x00\x01\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x02\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/09/21-18:30:39.270 7d4c Manual compaction at level-1 from '\x00\x01\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x02\x00\x00\x00' @ 0 : 0; will stop at '\x00\x03\x00\x00\xc8 \x00l\x00o\x00c\x00a\x00l\x00-\x00f\x00o\x00r\x00a\x00g\x00e\x00-\x00d\x00e\x00t\x00e\x00c\x00t\x00-\x00b\x00l\x00o\x00b\x00-\x00s\x00u\x00p\x00p\x00o\x00r\x00t' @ 171 : 1
+2026/09/21-18:30:39.270 7d4c Compacting 1@1 + 1@2 files
+2026/09/21-18:30:39.273 7d4c Generated table #8@1: 21 keys, 572 bytes
+2026/09/21-18:30:39.273 7d4c Compacted 1@1 + 1@2 files => 572 bytes
+2026/09/21-18:30:39.277 7d4c compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/09/21-18:30:39.278 7d4c Manual compaction at level-1 from '\x00\x03\x00\x00\xc8 \x00l\x00o\x00c\x00a\x00l\x00-\x00f\x00o\x00r\x00a\x00g\x00e\x00-\x00d\x00e\x00t\x00e\x00c\x00t\x00-\x00b\x00l\x00o\x00b\x00-\x00s\x00u\x00p\x00p\x00o\x00r\x00t' @ 171 : 1 .. '\x00\x02\x00\x00\x00' @ 0 : 0; will stop at (end)
