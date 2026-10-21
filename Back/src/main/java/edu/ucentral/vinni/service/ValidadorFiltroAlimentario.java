@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-public final class DietaryFilterValidator {
+public final class ValidadorFiltroAlimentario {
 
     private static final Set<String> PLANT_INGREDIENTS = Set.of(
             "aceite", "aceite de oliva", "aceite vegetal", "agua", "aguacate", "ajo", "albahaca",
@@ -55,36 +55,36 @@ public final class DietaryFilterValidator {
             "caldo de verduras"
     );
 
-    private static final Map<DietaryFilter, Set<String>> FORBIDDEN_INGREDIENTS = Map.of(
-            DietaryFilter.VEGANO, Set.of("carne", "pollo", "pescado", "marisco", "camar", "huevo", "leche",
+    private static final Map<FiltroAlimentario, Set<String>> FORBIDDEN_INGREDIENTS = Map.of(
+            FiltroAlimentario.VEGANO, Set.of("carne", "pollo", "pescado", "marisco", "camar", "huevo", "leche",
                     "queso", "mantequilla", "crema", "yogur", "yogurt", "miel", "gelatina", "caldo de pollo",
                     "caldo de carne", "caldo de pescado", "jamon", "tocino", "salchicha", "camaron",
                     "camarones"),
-            DietaryFilter.VEGETARIANO, Set.of("carne", "pollo", "pescado", "marisco", "camar", "jamon",
+            FiltroAlimentario.VEGETARIANO, Set.of("carne", "pollo", "pescado", "marisco", "camar", "jamon",
                     "tocino", "salchicha", "caldo de pollo", "caldo de carne", "caldo de pescado",
                     "camaron", "camarones"),
-            DietaryFilter.SIN_GLUTEN, Set.of("trigo", "cebada", "centeno", "malta", "seitan", "cuscus",
+            FiltroAlimentario.SIN_GLUTEN, Set.of("trigo", "cebada", "centeno", "malta", "seitan", "cuscus",
                     "salsa de soja"),
-            DietaryFilter.SIN_LACTEOS, Set.of("leche", "queso", "mantequilla", "crema", "yogur", "yogurt",
+            FiltroAlimentario.SIN_LACTEOS, Set.of("leche", "queso", "mantequilla", "crema", "yogur", "yogurt",
                     "nata", "requeson", "suero de leche", "caseina"),
-            DietaryFilter.SIN_LACTOSA, Set.of("leche", "queso", "mantequilla", "crema", "yogur", "yogurt",
+            FiltroAlimentario.SIN_LACTOSA, Set.of("leche", "queso", "mantequilla", "crema", "yogur", "yogurt",
                     "nata", "requeson", "suero de leche", "caseina"),
-            DietaryFilter.SIN_FRUTOS_SECOS, Set.of("almendra", "nuez", "nueces", "avellana", "pistacho",
+            FiltroAlimentario.SIN_FRUTOS_SECOS, Set.of("almendra", "nuez", "nueces", "avellana", "pistacho",
                     "anacardo", "castana", "nuez de macadamia", "nuez pecana", "mani", "cacahuate",
                     "mantequilla de mani", "mantequilla de cacahuate", "praline", "mazapan")
     );
 
     private static final Pattern WORD_SEPARATOR = Pattern.compile("[^\\p{L}\\p{N}]+");
 
-    private DietaryFilterValidator() {}
+    private ValidadorFiltroAlimentario() {}
 
-    public static List<DietaryFilter> compatibleFilters(List<String> ingredients) {
-        return java.util.Arrays.stream(DietaryFilter.values())
+    public static List<FiltroAlimentario> compatibleFilters(List<String> ingredients) {
+        return java.util.Arrays.stream(FiltroAlimentario.values())
                 .filter(filter -> ingredients.stream().allMatch(ingredient -> isCompatible(filter, ingredient)))
                 .toList();
     }
 
-    public static boolean isCompatible(DietaryFilter filter, String ingredient) {
+    public static boolean isCompatible(FiltroAlimentario filter, String ingredient) {
         String normalized = normalize(ingredient);
         if (normalized.isBlank() || containsForbidden(filter, normalized)) {
             return false;
@@ -106,21 +106,21 @@ public final class DietaryFilterValidator {
     }
 
     private static boolean isKnown(String ingredient, Set<String> knownIngredients) {
-        return knownIngredients.stream().map(DietaryFilterValidator::normalize).anyMatch(ingredient::equals);
+        return knownIngredients.stream().map(ValidadorFiltroAlimentario::normalize).anyMatch(ingredient::equals);
     }
 
-    private static boolean containsForbidden(DietaryFilter filter, String ingredient) {
+    private static boolean containsForbidden(FiltroAlimentario filter, String ingredient) {
         return FORBIDDEN_INGREDIENTS.get(filter).stream()
-                .map(DietaryFilterValidator::normalize)
+                .map(ValidadorFiltroAlimentario::normalize)
                 .filter(forbidden -> !isPlantBasedDairyAlternative(filter, ingredient, forbidden))
                 .anyMatch(forbidden -> ingredient.equals(forbidden) || ingredient.startsWith(forbidden + " ")
                         || ingredient.endsWith(" " + forbidden) || ingredient.contains(" " + forbidden + " "));
     }
 
     private static boolean isPlantBasedDairyAlternative(
-            DietaryFilter filter, String ingredient, String forbidden) {
-        boolean dairyFilter = filter == DietaryFilter.VEGANO || filter == DietaryFilter.SIN_LACTEOS
-                || filter == DietaryFilter.SIN_LACTOSA;
+            FiltroAlimentario filter, String ingredient, String forbidden) {
+        boolean dairyFilter = filter == FiltroAlimentario.VEGANO || filter == FiltroAlimentario.SIN_LACTEOS
+                || filter == FiltroAlimentario.SIN_LACTOSA;
         if (!dairyFilter) {
             return false;
         }

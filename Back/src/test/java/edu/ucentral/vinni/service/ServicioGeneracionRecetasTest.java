@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class RecipeGenerationServiceTest {
+class ServicioGeneracionRecetasTest {
 
-    private final RecipeGenerationService service = new RecipeGenerationService();
+    private final ServicioGeneracionRecetas service = new ServicioGeneracionRecetas();
 
     @Test
     void interpretaUnaRespuestaDeRecetasEstructurada() throws Exception {

@@ -1,8 +1,8 @@
 package edu.ucentral.vinni;
 
-import edu.ucentral.vinni.service.DietaryFilter;
-import edu.ucentral.vinni.service.RecipeGenerationService.GeneratedRecipe;
-import edu.ucentral.vinni.service.RecipeGenerationService.RecipeIngredient;
+import edu.ucentral.vinni.service.FiltroAlimentario;
+import edu.ucentral.vinni.service.ServicioGeneracionRecetas.GeneratedRecipe;
+import edu.ucentral.vinni.service.ServicioGeneracionRecetas.RecipeIngredient;
 import jakarta.ws.rs.BadRequestException;
 import org.junit.jupiter.api.Test;
 
@@ -54,7 +54,7 @@ class IngredientSuggestionsResourceTest {
         var response = resource.buildResponse(
                 request,
                 resource.validatedIngredients(request),
-                List.of(DietaryFilter.VEGANO, DietaryFilter.SIN_GLUTEN),
+                List.of(FiltroAlimentario.VEGANO, FiltroAlimentario.SIN_GLUTEN),
                 generated);
 
         assertEquals(List.of("Arroz con tomate", "Arroz con huevo"),
@@ -74,7 +74,7 @@ class IngredientSuggestionsResourceTest {
         var response = resource.buildResponse(
                 request,
                 resource.validatedIngredients(request),
-                List.of(DietaryFilter.VEGANO),
+                List.of(FiltroAlimentario.VEGANO),
                 generated);
 
         assertTrue(response.recetas().isEmpty());

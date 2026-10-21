@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ApplicationScoped
-public class RecipeGenerationService {
+public class ServicioGeneracionRecetas {
 
     private static final String API_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
@@ -34,7 +34,7 @@ public class RecipeGenerationService {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
-    public List<GeneratedRecipe> generar(List<PantryIngredient> pantry, List<DietaryFilter> filters) {
+    public List<GeneratedRecipe> generar(List<PantryIngredient> pantry, List<FiltroAlimentario> filters) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new WebApplicationException("El servicio de recetas no está configurado.",
                     Response.Status.SERVICE_UNAVAILABLE);
@@ -79,7 +79,7 @@ public class RecipeGenerationService {
         }
     }
 
-    String createPayload(List<PantryIngredient> pantry, List<DietaryFilter> filters) throws IOException {
+    String createPayload(List<PantryIngredient> pantry, List<FiltroAlimentario> filters) throws IOException {
         ObjectNode root = mapper.createObjectNode();
         ArrayNode contents = root.putArray("contents");
         ObjectNode content = contents.addObject();
@@ -142,7 +142,7 @@ public class RecipeGenerationService {
         return value.asText().trim();
     }
 
-    private String buildPrompt(List<PantryIngredient> pantry, List<DietaryFilter> filters) throws IOException {
+    private String buildPrompt(List<PantryIngredient> pantry, List<FiltroAlimentario> filters) throws IOException {
         String inventory = mapper.writeValueAsString(pantry);
         String dietaryPreferences = filters.isEmpty()
                 ? "No hay preferencias dietarias seleccionadas."

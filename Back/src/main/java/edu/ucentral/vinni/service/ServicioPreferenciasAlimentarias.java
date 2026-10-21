@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 @ApplicationScoped
-public class DietaryPreferenceService {
+public class ServicioPreferenciasAlimentarias {
 
     @Inject
     UsuarioRepository usuarioRepository;

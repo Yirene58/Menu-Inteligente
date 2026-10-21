@@ -1,6 +1,6 @@
 package edu.ucentral.vinni.service;
 
-public enum DietaryFilter {
+public enum FiltroAlimentario {
     VEGANO,
     VEGETARIANO,
     SIN_GLUTEN,

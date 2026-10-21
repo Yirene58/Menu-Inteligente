@@ -13,13 +13,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import edu.ucentral.vinni.security.UsuarioAutenticado;
-import edu.ucentral.vinni.service.DietaryFilter;
-import edu.ucentral.vinni.service.DietaryFilterValidator;
-import edu.ucentral.vinni.service.DietaryPreferenceService;
-import edu.ucentral.vinni.service.RecipeGenerationService;
-import edu.ucentral.vinni.service.RecipeGenerationService.GeneratedRecipe;
-import edu.ucentral.vinni.service.RecipeGenerationService.PantryIngredient;
-import edu.ucentral.vinni.service.RecipeGenerationService.RecipeIngredient;
+import edu.ucentral.vinni.service.FiltroAlimentario;
+import edu.ucentral.vinni.service.ValidadorFiltroAlimentario;
+import edu.ucentral.vinni.service.ServicioPreferenciasAlimentarias;
+import edu.ucentral.vinni.service.ServicioGeneracionRecetas;
+import edu.ucentral.vinni.service.ServicioGeneracionRecetas.GeneratedRecipe;
+import edu.ucentral.vinni.service.ServicioGeneracionRecetas.PantryIngredient;
+import edu.ucentral.vinni.service.ServicioGeneracionRecetas.RecipeIngredient;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
@@ -53,19 +53,19 @@ public class IngredientSuggestionsResource {
     );
 
     @Inject
-    RecipeGenerationService recipeGenerationService;
+    ServicioGeneracionRecetas recipeGenerationService;
 
     @Inject
     UsuarioAutenticado usuarioAutenticado;
 
     @Inject
-    DietaryPreferenceService dietaryPreferenceService;
+    ServicioPreferenciasAlimentarias dietaryPreferenceService;
 
     @POST
     public SuggestionsResponse suggest(SuggestionsRequest request) {
         List<Ingredient> ingredients = validatedIngredients(request);
-        List<DietaryFilter> filters = usuarioAutenticado.get().getFiltrosAlimentarios().stream()
-                .map(DietaryFilter::valueOf)
+        List<FiltroAlimentario> filters = usuarioAutenticado.get().getFiltrosAlimentarios().stream()
+                .map(FiltroAlimentario::valueOf)
                 .sorted()
                 .toList();
         List<PantryIngredient> pantry = ingredients.stream()
@@ -101,7 +101,7 @@ public class IngredientSuggestionsResource {
             throw new BadRequestException("Cada filtro alimentario debe ser válido.");
         }
         try {
-            return DietaryFilter.valueOf(value.trim().toUpperCase(Locale.ROOT)).name();
+            return FiltroAlimentario.valueOf(value.trim().toUpperCase(Locale.ROOT)).name();
         } catch (IllegalArgumentException exception) {
             throw new BadRequestException("El filtro alimentario no está disponible.");
         }
@@ -121,7 +121,7 @@ public class IngredientSuggestionsResource {
     SuggestionsResponse buildResponse(
             SuggestionsRequest request,
             List<Ingredient> ingredients,
-            List<DietaryFilter> filters,
+            List<FiltroAlimentario> filters,
             List<GeneratedRecipe> generatedRecipes) {
         LocalDate today = request.fechaActual() == null ? LocalDate.now() : request.fechaActual();
         List<StorageSuggestion> storage = ingredients.stream()
@@ -132,7 +132,8 @@ public class IngredientSuggestionsResource {
                 .map(recipe -> recipeSuggestion(recipe, ingredients))
                 .filter(recipe -> recipe.coincidencias() > 0)
                 .filter(recipe -> filters.isEmpty()
-                        || recipe.filtrosCompatibles().stream().map(DietaryFilter::valueOf).anyMatch(filters::contains))
+                        || recipe.filtrosCompatibles().stream()
+                        .map(FiltroAlimentario::valueOf).anyMatch(filters::contains))
                 .sorted(Comparator.comparingInt(RecipeSuggestion::prioridadVencimiento).reversed()
                         .thenComparing(Comparator.comparingInt(RecipeSuggestion::coincidencias).reversed())
                         .thenComparingInt(RecipeSuggestion::faltantes))
@@ -163,14 +164,14 @@ public class IngredientSuggestionsResource {
 
     private RecipeSuggestion recipeSuggestion(GeneratedRecipe recipe, List<Ingredient> ingredients) {
         Map<String, Ingredient> pantry = ingredients.stream().collect(Collectors.toMap(
-                ingredient -> DietaryFilterValidator.normalize(ingredient.nombre()), Function.identity(),
+                ingredient -> ValidadorFiltroAlimentario.normalize(ingredient.nombre()), Function.identity(),
                 (first, later) -> first));
         List<String> available = new ArrayList<>();
         List<MissingIngredient> missing = new ArrayList<>();
         List<String> requiredNames = new ArrayList<>();
         int score = 0;
         for (RecipeIngredient required : recipe.ingredientes()) {
-            String normalizedName = DietaryFilterValidator.normalize(required.nombre());
+            String normalizedName = ValidadorFiltroAlimentario.normalize(required.nombre());
             requiredNames.add(required.nombre());
             Ingredient found = pantry.get(normalizedName);
             if (found == null) {
@@ -184,8 +185,8 @@ public class IngredientSuggestionsResource {
                         required.nombre(), required.cantidad() - found.cantidad(), required.unidad()));
             }
         }
-        List<DietaryFilter> compatibleFilters = DietaryFilterValidator.compatibleFilters(requiredNames);
-        String id = DietaryFilterValidator.normalize(recipe.nombre()).replace(' ', '-');
+        List<FiltroAlimentario> compatibleFilters = ValidadorFiltroAlimentario.compatibleFilters(requiredNames);
+        String id = ValidadorFiltroAlimentario.normalize(recipe.nombre()).replace(' ', '-');
         return new RecipeSuggestion(id, recipe.nombre(), recipe.categoria(), recipe.minutos(),
                 recipe.ingredientes(), available, missing, available.size(), missing.size(), score,
                 compatibleFilters.stream().map(Enum::name).toList());
