@@ -20,6 +20,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -67,6 +68,7 @@ public class AlimentoResource {
             alimento.setDescripcion(request.descripcion == null ? null : request.descripcion.trim());
             alimento.setCantidad(request.cantidad);
             alimento.setUnidadMedida(request.unidadMedida.trim().toLowerCase());
+            alimento.setFechaVencimiento(request.fechaVencimiento);
 
             alimentoRepository.persist(alimento);
 
@@ -122,6 +124,7 @@ public class AlimentoResource {
             alimento.setDescripcion(request.descripcion == null ? null : request.descripcion.trim());
             alimento.setCantidad(request.cantidad);
             alimento.setUnidadMedida(request.unidadMedida.trim().toLowerCase());
+            alimento.setFechaVencimiento(request.fechaVencimiento);
 
             return Response.ok(alimento).build();
         } catch (IllegalArgumentException e) {
@@ -186,6 +189,7 @@ public class AlimentoResource {
         public String descripcion;
         public BigDecimal cantidad;
         public String unidadMedida;
+        public LocalDate fechaVencimiento;
     }
 
     public static class ErrorResponse {

@@ -36,7 +36,7 @@ class SugerenciasService {
                     'nombre': food.nombre,
                     'cantidad': food.cantidad,
                     'unidad': food.unidadMedida,
-                    'fechaVencimiento': null,
+                    'fechaVencimiento': food.fechaVencimientoIso,
                   },
                 )
                 .toList(),

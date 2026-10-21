@@ -46,20 +46,78 @@ class AlimentoService {
     required String descripcion,
     required num cantidad,
     required String unidadMedida,
+    DateTime? fechaVencimiento,
   }) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/alimentos'),
       headers: await _headers(),
-      body: jsonEncode({
-        'nombre': nombre,
-        'idCategoria': idCategoria,
-        'descripcion': descripcion,
-        'cantidad': cantidad,
-        'unidadMedida': unidadMedida,
-      }),
+      body: jsonEncode(
+        _payload(
+          nombre: nombre,
+          idCategoria: idCategoria,
+          descripcion: descripcion,
+          cantidad: cantidad,
+          unidadMedida: unidadMedida,
+          fechaVencimiento: fechaVencimiento,
+        ),
+      ),
     );
     _checkResponse(response, 'No fue posible guardar el alimento');
   }
+
+  Future<void> actualizarAlimento({
+    required int id,
+    required String nombre,
+    required int idCategoria,
+    required String descripcion,
+    required num cantidad,
+    required String unidadMedida,
+    DateTime? fechaVencimiento,
+  }) async {
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/alimentos/$id'),
+      headers: await _headers(),
+      body: jsonEncode(
+        _payload(
+          nombre: nombre,
+          idCategoria: idCategoria,
+          descripcion: descripcion,
+          cantidad: cantidad,
+          unidadMedida: unidadMedida,
+          fechaVencimiento: fechaVencimiento,
+        ),
+      ),
+    );
+    _checkResponse(response, 'No fue posible actualizar el alimento');
+  }
+
+  Future<void> eliminarAlimento(int id) async {
+    final response = await http.delete(
+      Uri.parse('${ApiConfig.baseUrl}/alimentos/$id'),
+      headers: await _headers(),
+    );
+    _checkResponse(response, 'No fue posible eliminar el alimento');
+  }
+
+  Map<String, dynamic> _payload({
+    required String nombre,
+    required int idCategoria,
+    required String descripcion,
+    required num cantidad,
+    required String unidadMedida,
+    DateTime? fechaVencimiento,
+  }) => {
+    'nombre': nombre,
+    'idCategoria': idCategoria,
+    'descripcion': descripcion,
+    'cantidad': cantidad,
+    'unidadMedida': unidadMedida,
+    'fechaVencimiento': fechaVencimiento == null
+        ? null
+        : '${fechaVencimiento.year.toString().padLeft(4, '0')}-'
+              '${fechaVencimiento.month.toString().padLeft(2, '0')}-'
+              '${fechaVencimiento.day.toString().padLeft(2, '0')}',
+  };
 
   Future<Map<String, String>> _headers() async {
     final token = await StorageService.getToken();

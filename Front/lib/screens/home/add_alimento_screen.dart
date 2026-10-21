@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../models/alimento.dart';
 import '../../models/alimento_form_validator.dart';
 import '../../models/categoria_alimento.dart';
 import '../../services/alimento_service.dart';
 
 class AddAlimentoScreen extends StatefulWidget {
-  const AddAlimentoScreen({super.key});
+  const AddAlimentoScreen({super.key, this.alimento});
+
+  final Alimento? alimento;
 
   @override
   State<AddAlimentoScreen> createState() => _AddAlimentoScreenState();
@@ -21,11 +24,21 @@ class _AddAlimentoScreenState extends State<AddAlimentoScreen> {
   late Future<List<CategoriaAlimento>> _categoriesFuture;
   int? _selectedCategoryId;
   String? _selectedUnit;
+  DateTime? _expiryDate;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
+    final alimento = widget.alimento;
+    if (alimento != null) {
+      _nameController.text = alimento.nombre;
+      _descriptionController.text = alimento.descripcion;
+      _quantityController.text = alimento.cantidad.toString();
+      _selectedCategoryId = alimento.idCategoria;
+      _selectedUnit = alimento.unidadMedida;
+      _expiryDate = alimento.fechaVencimiento;
+    }
     _categoriesFuture = _service.listarCategorias();
   }
 
@@ -60,13 +73,27 @@ class _AddAlimentoScreenState extends State<AddAlimentoScreen> {
     );
     setState(() => _saving = true);
     try {
-      await _service.crearAlimento(
-        nombre: _nameController.text.trim(),
-        idCategoria: _selectedCategoryId!,
-        descripcion: _descriptionController.text.trim(),
-        cantidad: quantity,
-        unidadMedida: _selectedUnit!,
-      );
+      final alimento = widget.alimento;
+      if (alimento?.id == null) {
+        await _service.crearAlimento(
+          nombre: _nameController.text.trim(),
+          idCategoria: _selectedCategoryId!,
+          descripcion: _descriptionController.text.trim(),
+          cantidad: quantity,
+          unidadMedida: _selectedUnit!,
+          fechaVencimiento: _expiryDate,
+        );
+      } else {
+        await _service.actualizarAlimento(
+          id: alimento!.id!,
+          nombre: _nameController.text.trim(),
+          idCategoria: _selectedCategoryId!,
+          descripcion: _descriptionController.text.trim(),
+          cantidad: quantity,
+          unidadMedida: _selectedUnit!,
+          fechaVencimiento: _expiryDate,
+        );
+      }
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (error) {
@@ -82,6 +109,20 @@ class _AddAlimentoScreenState extends State<AddAlimentoScreen> {
     }
   }
 
+  Future<void> _selectExpiryDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _expiryDate ?? now,
+      firstDate: DateTime(now.year - 20),
+      lastDate: DateTime(now.year + 30),
+      helpText: 'Selecciona la fecha de vencimiento',
+    );
+    if (picked != null && mounted) {
+      setState(() => _expiryDate = picked);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final today = MaterialLocalizations.of(context)
@@ -92,9 +133,9 @@ class _AddAlimentoScreenState extends State<AddAlimentoScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF7FBF8),
         surfaceTintColor: Colors.transparent,
-        title: const Text(
-          'Añadir alimento',
-          style: TextStyle(
+        title: Text(
+          widget.alimento == null ? 'Añadir alimento' : 'Editar alimento',
+          style: const TextStyle(
             color: Color(0xFF093C36),
             fontWeight: FontWeight.w800,
           ),
@@ -109,9 +150,11 @@ class _AddAlimentoScreenState extends State<AddAlimentoScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                 children: [
-                  const Text(
-                    'Registra un alimento',
-                    style: TextStyle(
+                  Text(
+                    widget.alimento == null
+                        ? 'Registra un alimento'
+                        : 'Actualiza tu alimento',
+                    style: const TextStyle(
                       color: Color(0xFF093C36),
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
@@ -119,7 +162,7 @@ class _AddAlimentoScreenState extends State<AddAlimentoScreen> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Completa todos los campos para guardarlo en tu inventario.',
+                    'Completa los datos y agrega el vencimiento si lo conoces.',
                     style: TextStyle(color: Color(0xFF718880)),
                   ),
                   const SizedBox(height: 24),
@@ -178,11 +221,26 @@ class _AddAlimentoScreenState extends State<AddAlimentoScreen> {
                       labelText: 'Fecha de registro',
                       prefixIcon: Icon(Icons.calendar_today_rounded),
                     ),
-                    child: Text(
-                      today,
-                      style: const TextStyle(color: Color(0xFF093C36)),
+                    child: Text(today),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _selectExpiryDate,
+                    icon: const Icon(Icons.event_available_outlined),
+                    label: Text(
+                      _expiryDate == null
+                          ? 'Añadir fecha de vencimiento (opcional)'
+                          : 'Vence el ${MaterialLocalizations.of(context).formatMediumDate(_expiryDate!)}',
                     ),
                   ),
+                  if (_expiryDate != null)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => setState(() => _expiryDate = null),
+                        child: const Text('Quitar fecha'),
+                      ),
+                    ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
                     onPressed: _saving ? null : _save,
@@ -192,7 +250,13 @@ class _AddAlimentoScreenState extends State<AddAlimentoScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.save_outlined),
-                    label: Text(_saving ? 'Guardando...' : 'Guardar alimento'),
+                    label: Text(
+                      _saving
+                          ? 'Guardando...'
+                          : widget.alimento == null
+                          ? 'Guardar alimento'
+                          : 'Guardar cambios',
+                    ),
                   ),
                 ],
               ),
@@ -242,7 +306,10 @@ class _AddAlimentoScreenState extends State<AddAlimentoScreen> {
 
         final categories = snapshot.data!;
         return DropdownButtonFormField<int>(
-          initialValue: _selectedCategoryId,
+          initialValue:
+              categories.any((category) => category.id == _selectedCategoryId)
+              ? _selectedCategoryId
+              : null,
           decoration: const InputDecoration(
             labelText: 'Categoría',
             prefixIcon: Icon(Icons.category_outlined),

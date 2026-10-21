@@ -99,7 +99,7 @@ class _SugerenciasScreenState extends State<SugerenciasScreen> {
                 _SuggestionRow(
                   title: item['ingrediente'] as String? ?? 'Alimento',
                   detail: item['instruccion'] as String? ?? '',
-                  footer: item['condicion'] as String? ?? '',
+                  footer: _expiryDetail(item),
                 ),
             ],
             if (recipes.isNotEmpty) ...[
@@ -123,6 +123,30 @@ class _SugerenciasScreenState extends State<SugerenciasScreen> {
       },
     ),
   );
+
+  String _expiryDetail(Map<String, dynamic> item) {
+    final condition = item['condicion'] as String? ?? '';
+    final rawDate = item['fechaVencimiento'] as String?;
+    if (rawDate == null) {
+      return [
+        condition,
+        'Sin fecha de vencimiento; prioridad normal',
+      ].where((text) => text.isNotEmpty).join(' · ');
+    }
+    final date = DateTime.tryParse(rawDate);
+    if (date == null) return condition;
+    final days = (item['diasParaVencer'] as num?)?.toInt();
+    final dateText = MaterialLocalizations.of(context).formatMediumDate(date);
+    final status = switch (days) {
+      null => 'Vence $dateText',
+      < 0 => 'Vencido hace ${-days} ${-days == 1 ? 'día' : 'días'} · $dateText',
+      0 => 'Vence hoy · $dateText',
+      1 => 'Vence mañana · $dateText',
+      <= 3 => 'Vence en $days días · $dateText',
+      _ => 'Vence $dateText',
+    };
+    return [condition, status].where((text) => text.isNotEmpty).join(' · ');
+  }
 }
 
 class _SuggestionRow extends StatelessWidget {

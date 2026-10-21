@@ -46,4 +46,25 @@ class IngredientSuggestionsResourceTest {
                 ))
         ));
     }
+
+    @Test
+    void informaYOrdenaProductosVencidosYSinFecha() {
+        LocalDate today = LocalDate.of(2026, 10, 14);
+        var response = resource.suggest(new IngredientSuggestionsResource.SuggestionsRequest(
+                today,
+                List.of(
+                        new IngredientSuggestionsResource.IngredientInput(
+                                "arroz", 1.0, "kg", null),
+                        new IngredientSuggestionsResource.IngredientInput(
+                                "tomate", 2.0, "unidad", today.minusDays(1)),
+                        new IngredientSuggestionsResource.IngredientInput(
+                                "papa", 2.0, "unidad", today)
+                )
+        ));
+
+        assertEquals("tomate", response.almacenamiento().getFirst().ingrediente());
+        assertEquals(-1, response.almacenamiento().getFirst().diasParaVencer());
+        assertEquals(today.minusDays(1), response.almacenamiento().getFirst().fechaVencimiento());
+        assertEquals(Integer.MAX_VALUE, response.almacenamiento().getLast().diasParaVencer());
+    }
 }

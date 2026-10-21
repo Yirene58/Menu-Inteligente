@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../services/storage_service.dart';
 import '../auth/auth_screen.dart';
 import 'add_alimento_screen.dart';
+import 'inventory_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -147,6 +148,14 @@ class HomeScreen extends StatelessWidget {
             },
             icon: const Icon(Icons.add_rounded),
             label: const Text('Añadir Alimento Manualmente'),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push<void>(
+              MaterialPageRoute<void>(builder: (_) => const InventoryScreen()),
+            ),
+            icon: const Icon(Icons.inventory_2_outlined),
+            label: const Text('Ver mi inventario'),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
