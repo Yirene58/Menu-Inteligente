@@ -70,6 +70,10 @@ Easily start your REST Web Services
 
 Configura `GEMINI_API_KEY` en el entorno antes de iniciar Quarkus para habilitar el reconocimiento. No guardes la clave en este archivo ni en `application.properties`.
 
+## Sugerencias y filtros alimentarios
+
+Las sugerencias de recetas se generan dinámicamente con Gemini a partir de los ingredientes enviados por la aplicación. Configura `GEMINI_API_KEY` para habilitar esta función. Las preferencias de filtrado se guardan en la cuenta mediante `GET` y `PUT /api/sugerencias/filtros`. Cuando hay varios filtros activos, una receta debe cumplir al menos uno; el backend valida conservadoramente los ingredientes declarados y descarta los que no puede clasificar. Esta validación no certifica ausencia de trazas ni contaminación cruzada.
+
 ## Correo SMTP
 
 El correo de bienvenida se envía mediante Quarkus Mailer. Para activar el envío real, configure estas variables antes de iniciar Quarkus (Gmail requiere una contraseña de aplicación):

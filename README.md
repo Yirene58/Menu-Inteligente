@@ -6,7 +6,7 @@ El repositorio contiene el backend Quarkus en `Back/` y la aplicacion Flutter en
 
 Desde PowerShell, ejecuta las pruebas con `.\Back\mvnw.cmd test` y el servidor de desarrollo con `.\Back\mvnw.cmd quarkus:dev`.
 
-El reconocimiento de imagen requiere `GEMINI_API_KEY` en el entorno del proceso backend. Sin esa variable, el endpoint responde `503` y no realiza llamadas externas.
+El reconocimiento de imagen y la generación dinámica de recetas requieren `GEMINI_API_KEY` en el entorno del proceso backend. Sin esa variable, los endpoints correspondientes responden `503` y no realizan llamadas externas. Las preferencias alimentarias se guardan por cuenta. Las recetas que se muestran con filtros activos se validan conservadoramente usando sus ingredientes declarados; esto no garantiza ausencia de trazas ni contaminación cruzada.
 
 ## Frontend
 
