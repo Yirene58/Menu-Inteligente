@@ -8,9 +8,13 @@ Desde PowerShell, ejecuta las pruebas con `.\Back\mvnw.cmd test` y el servidor d
 
 El reconocimiento de imagen y la generación dinámica de recetas requieren `GEMINI_API_KEY` en el entorno del proceso backend. Sin esa variable, los endpoints correspondientes responden `503` y no realizan llamadas externas. Las preferencias alimentarias se guardan por cuenta. Las recetas que se muestran con filtros activos se validan conservadoramente usando sus ingredientes declarados; esto no garantiza ausencia de trazas ni contaminación cruzada.
 
+El catálogo de recetas y la despensa usan PostgreSQL. Configura `DB_URL`, `DB_USERNAME` y `DB_PASSWORD` en el entorno del backend. El script `Back/database/scripts/04_create_recipes.sql` carga el catálogo inicial. El endpoint `GET /api/sugerencias/recetas?usuarioId=1` devuelve recetas según los ingredientes disponibles, junto con coincidencias, faltantes y porcentaje de cobertura.
+
 ## Frontend
 
 Desde `Front/`, ejecuta `flutter pub get` y `flutter run --dart-define=API_BASE_URL=http://localhost:8080`. Para dispositivos fisicos, configura `API_BASE_URL` con la direccion del equipo que ejecuta Quarkus.
+
+La vista de recomendaciones está en `Front/lib/recipe_recommendations_page.dart`; intégrala con `RecipeRecommendationsPage` y su función `loadRecommendations`.
 
 ## Proyecto Quarkus
 
