@@ -1,84 +1,20 @@
-# gestortecno
+# GestorTecno — HU4
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+Recomendaciones de recetas basadas en los ingredientes disponibles del usuario.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## Estructura
 
-## Running the application in dev mode
+- `front/`: vista Flutter de recomendaciones.
+- `back/`: API Quarkus, configuración, pruebas y scripts SQL.
 
-You can run your application in dev mode that enables live coding using:
+## Backend
 
-```shell script
-./mvnw quarkus:dev
-```
+Desde `back/`, inicia Quarkus en modo desarrollo con `./mvnw quarkus:dev` (Windows: `mvnw.cmd quarkus:dev`).
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+Configura `DB_URL`, `DB_USERNAME` y `DB_PASSWORD` para conectar PostgreSQL. El script `back/database/scripts/04_create_recipes.sql` crea y carga el catálogo de recetas.
 
-## Packaging and running the application
+`GET /api/sugerencias/recetas?usuarioId=1` devuelve recetas con ingredientes disponibles, coincidencias, faltantes y porcentaje de cobertura.
 
-The application can be packaged using:
+## Frontend
 
-```shell script
-./mvnw package
-```
-
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
-
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
-
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
-
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/gestortecno-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
-
-## Related Guides
-
-- REST ([guide](https://quarkus.io/guides/rest)): Build RESTful web services and APIs using Jakarta REST (formerly JAX-RS)
-
-## Provided Code
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
-
-## HU4: recomendaciones de recetas
-
-La rama `feature/HU4` agrega el catálogo persistido de recetas y una vista Flutter independiente para mostrar las recomendaciones. La vista recibe una función `loadRecommendations`, de modo que la pantalla de inventario puede conectarla con su sesión y cliente HTTP actuales sin duplicar las acciones para agregar, editar o eliminar alimentos.
-
-### Base de datos
-
-Ejecuta los scripts en este orden: `01_create_database.sql`, `02_create_tables.sql`, `03_create_ingredients.sql` (de la rama de inventario) y `04_create_recipes.sql`. El script de recetas crea y carga el catálogo de forma idempotente. El backend lee los ingredientes del usuario desde `ingredientes` y las recetas desde `recetas` y `receta_ingredientes`.
-
-Configura `DB_URL`, `DB_USERNAME` y `DB_PASSWORD` si la base de datos no usa los valores locales predeterminados.
-
-### API
-
-`GET /api/sugerencias/recetas?usuarioId=1` devuelve recetas con al menos un ingrediente disponible, ordenadas por la cantidad de ingredientes de la receta presentes en el inventario. La respuesta incluye coincidencias, faltantes, porcentaje de cobertura y los ingredientes requeridos para cada receta.
-
-### Vista Flutter
-
-Importa `frontend/lib/recipe_recommendations_page.dart` y abre `RecipeRecommendationsPage(loadRecommendations: ...)`. Convierte cada objeto JSON de la respuesta con `RecipeRecommendation.fromJson`. La vista muestra estados de carga, error y lista vacía, permite actualizar al deslizar y marca ingredientes disponibles o faltantes.
+Importa `front/lib/recipe_recommendations_page.dart` y conecta `RecipeRecommendationsPage` con la función `loadRecommendations` de la aplicación.
