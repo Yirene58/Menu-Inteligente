@@ -47,11 +47,19 @@ class HomeScreen extends StatelessWidget {
       );
       if (image == null || !context.mounted) return;
 
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
+      final saved = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
           builder: (_) => ReconocimientoScreen(image: image),
         ),
       );
+      if (saved == true && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Alimentos agregados al inventario.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

@@ -29,7 +29,7 @@ public class ReconocimientoResource {
                     .build();
         }
 
-        Map<String, String> resultado = geminiService.analizarImagen(request.getImagenBase64());
+        Map<String, Object> resultado = geminiService.analizarImagen(request.getImagenBase64());
 
         return Response.ok(resultado).build();
     }

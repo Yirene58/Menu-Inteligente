@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../services/reconocimiento_service.dart';
+import 'revision_alimento_screen.dart';
 
 class ReconocimientoScreen extends StatefulWidget {
   const ReconocimientoScreen({required this.image, super.key});
@@ -16,7 +17,6 @@ class ReconocimientoScreen extends StatefulWidget {
 
 class _ReconocimientoScreenState extends State<ReconocimientoScreen> {
   late final Future<Uint8List> _imageBytes;
-  Map<String, dynamic>? _result;
   String? _error;
   bool _analyzing = false;
 
@@ -35,7 +35,20 @@ class _ReconocimientoScreenState extends State<ReconocimientoScreen> {
     try {
       final result = await ReconocimientoService().analizarImagen(widget.image);
       if (!mounted) return;
-      setState(() => _result = result);
+      final detectedFoods = result['alimentos'];
+      if (detectedFoods is! List || detectedFoods.isEmpty) {
+        throw const ReconocimientoException(
+          'No se reconocieron alimentos en la imagen.',
+        );
+      }
+
+      final saved = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) =>
+              RevisionAlimentosScreen(alimentosDetectados: detectedFoods),
+        ),
+      );
+      if (saved == true && mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
       setState(() => _error = error.toString());
@@ -87,30 +100,6 @@ class _ReconocimientoScreenState extends State<ReconocimientoScreen> {
             Text(
               _error!,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
-          if (_result != null) ...[
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFDCE9E1)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _result!['objeto'] as String? ?? 'Sin identificar',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(_result!['categoria'] as String? ?? 'General'),
-                  const SizedBox(height: 12),
-                  Text(_result!['descripcion'] as String? ?? ''),
-                ],
-              ),
             ),
           ],
         ],

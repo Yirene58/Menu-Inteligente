@@ -40,6 +40,39 @@ class AlimentoService {
         .toList();
   }
 
+  Future<void> crearCategoria({
+    required String nombre,
+    String? descripcion,
+  }) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/alimentos/categorias'),
+      headers: await _headers(),
+      body: jsonEncode({'nombre': nombre, 'descripcion': descripcion}),
+    );
+    _checkResponse(response, 'No fue posible crear la categoría');
+  }
+
+  Future<void> actualizarCategoria({
+    required int id,
+    required String nombre,
+    String? descripcion,
+  }) async {
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/alimentos/categorias/$id'),
+      headers: await _headers(),
+      body: jsonEncode({'nombre': nombre, 'descripcion': descripcion}),
+    );
+    _checkResponse(response, 'No fue posible actualizar la categoría');
+  }
+
+  Future<void> eliminarCategoria(int id) async {
+    final response = await http.delete(
+      Uri.parse('${ApiConfig.baseUrl}/alimentos/categorias/$id'),
+      headers: await _headers(),
+    );
+    _checkResponse(response, 'No fue posible eliminar la categoría');
+  }
+
   Future<void> crearAlimento({
     required String nombre,
     required int idCategoria,
@@ -138,9 +171,15 @@ class AlimentoService {
 
     String message = fallbackMessage;
     try {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      message = body['mensaje'] as String? ?? fallbackMessage;
-    } catch (_) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map) {
+        message =
+            decoded['mensaje'] as String? ??
+            decoded['error'] as String? ??
+            decoded['message'] as String? ??
+            fallbackMessage;
+      }
+    } on FormatException {
       message = fallbackMessage;
     }
     throw AlimentoApiException(message);

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/alimento.dart';
 import '../../services/alimento_service.dart';
 import 'add_alimento_screen.dart';
+import 'manage_categories_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -38,6 +39,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
       MaterialPageRoute(builder: (_) => AddAlimentoScreen(alimento: alimento)),
     );
     if (saved == true && mounted) _reload();
+  }
+
+  Future<void> _manageCategories() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => const ManageCategoriesScreen()),
+    );
   }
 
   Future<void> _delete(Alimento alimento) async {
@@ -84,6 +91,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
         style: TextStyle(color: Color(0xFF093C36), fontWeight: FontWeight.w800),
       ),
       actions: [
+        IconButton(
+          onPressed: _manageCategories,
+          tooltip: 'Administrar categorías',
+          icon: const Icon(Icons.category_outlined),
+        ),
         IconButton(
           onPressed: _reload,
           tooltip: 'Actualizar inventario',

@@ -14,8 +14,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 @ApplicationScoped
 public class GeminiService {
@@ -28,23 +30,28 @@ public class GeminiService {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
-    public Map<String, String> analizarImagen(String base64Image) {
+    public Map<String, Object> analizarImagen(String base64Image) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new WebApplicationException("El servicio de reconocimiento no está configurado.",
                     Response.Status.SERVICE_UNAVAILABLE);
         }
 
-        Map<String, String> resultado = new HashMap<>();
         try {
-            String cleanBase64 = base64Image.contains(",") ? base64Image.split(",")[1] : base64Image;
+            String[] imageParts = base64Image.split(",", 2);
+            String cleanBase64 = imageParts.length == 2 ? imageParts[1] : imageParts[0];
+            String mimeType = imageParts.length == 2 && imageParts[0].startsWith("data:")
+                    ? imageParts[0].substring("data:".length(), imageParts[0].indexOf(';'))
+                    : "image/jpeg";
 
             String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
 
-            // Prompt pidiendo "descripcion" detallada visual
-            String promptText = "Analiza la imagen adjunta. Identifica el elemento principal y responde UNICAMENTE con un objeto JSON valido con estas tres claves exactas: " +
-                    "\"objeto\" (nombre corto), " +
-                    "\"categoria\" (ej: Mascota, Alimento, Vehiculo, Objeto personal, etc.), e " +
-                    "\"descripcion\" (descripcion visual detallada del elemento en la foto, incluyendo colores, postura o detalles clave). No agregues formato Markdown ni bloques ```json.";
+            String promptText = "Identifica los alimentos visibles en la imagen. Devuelve únicamente JSON válido "
+                    + "con la forma {\"alimentos\":[{\"nombre\":\"Manzana\","
+                    + "\"categoriaNombre\":\"Frutas\",\"cantidad\":1,"
+                    + "\"unidadMedida\":\"unidad\",\"descripcion\":\"\"}]}. "
+                    + "Incluye cada alimento reconocible una sola vez; no inventes alimentos que no sean visibles. "
+                    + "Usa categorías Frutas, Verduras, Proteínas, Lácteos, Cereales u Otros. "
+                    + "Usa unidades kg, g, unidad, litro o ml. Sin Markdown.";
 
             ObjectNode rootNode = mapper.createObjectNode();
             ArrayNode contentsArray = rootNode.putArray("contents");
@@ -54,8 +61,8 @@ public class GeminiService {
             partsArray.addObject().put("text", promptText);
 
             ObjectNode inlineDataNode = mapper.createObjectNode();
-            inlineDataNode.put("mime_type", "image/jpeg");
-            inlineDataNode.put("data", cleanBase64);
+            inlineDataNode.put("mime_type", mimeType);
+            inlineDataNode.put("data", cleanBase64.trim());
 
             partsArray.addObject().set("inline_data", inlineDataNode);
 
@@ -71,29 +78,11 @@ public class GeminiService {
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() == 200) {
-                JsonNode root = mapper.readTree(response.body());
-                String responseText = root.path("candidates").get(0)
-                        .path("content").path("parts").get(0)
-                        .path("text").asText().trim();
-
-                if (responseText.startsWith("```json")) {
-                    responseText = responseText.replace("```json", "").replace("```", "").trim();
-                } else if (responseText.startsWith("```")) {
-                    responseText = responseText.replace("```", "").trim();
-                }
-
-                JsonNode parsedJson = mapper.readTree(responseText);
-
-                // Mapeo con la nueva clave "descripcion"
-                resultado.put("objeto", parsedJson.path("objeto").asText("Desconocido"));
-                resultado.put("categoria", parsedJson.path("categoria").asText("General"));
-                resultado.put("descripcion", parsedJson.path("descripcion").asText("Sin descripción disponible."));
-                return resultado;
-            } else {
+            if (response.statusCode() != 200) {
                 throw new WebApplicationException("El servicio de reconocimiento no está disponible.",
                         Response.Status.BAD_GATEWAY);
             }
+            return parsearRespuesta(response.body());
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -103,6 +92,56 @@ public class GeminiService {
             throw e;
         } catch (Exception e) {
             throw new WebApplicationException("No fue posible procesar la imagen.", Response.Status.BAD_GATEWAY);
+        }
+    }
+
+    Map<String, Object> parsearRespuesta(String responseBody) {
+        try {
+            JsonNode root = mapper.readTree(responseBody);
+            JsonNode parts = root.path("candidates").path(0).path("content").path("parts");
+            if (!parts.isArray() || parts.isEmpty() || !parts.get(0).path("text").isTextual()) {
+                throw new IllegalArgumentException("La respuesta no contiene alimentos reconocidos.");
+            }
+
+            String responseText = parts.get(0).path("text").asText().trim()
+                    .replaceFirst("^```(?:json)?\\s*", "")
+                    .replaceFirst("\\s*```$", "");
+            JsonNode parsed = mapper.readTree(responseText);
+            JsonNode detectedFoods = parsed.path("alimentos");
+            if (!detectedFoods.isArray() && parsed.isObject() && parsed.has("objeto")) {
+                detectedFoods = mapper.createArrayNode().add(parsed);
+            }
+            if (!detectedFoods.isArray() || detectedFoods.isEmpty()) {
+                throw new IllegalArgumentException("No se reconocieron alimentos en la imagen.");
+            }
+
+            List<Map<String, Object>> foods = new ArrayList<>();
+            for (JsonNode detectedFood : detectedFoods) {
+                String name = detectedFood.path("nombre").asText(
+                        detectedFood.path("objeto").asText("")).trim();
+                if (name.isEmpty()) {
+                    continue;
+                }
+
+                Map<String, Object> food = new LinkedHashMap<>();
+                food.put("nombre", name);
+                food.put("categoriaNombre", detectedFood.path("categoriaNombre")
+                        .asText(detectedFood.path("categoria").asText("Otros")));
+                food.put("cantidad", detectedFood.path("cantidad").asDouble(1));
+                food.put("unidadMedida", detectedFood.path("unidadMedida").asText("unidad"));
+                food.put("descripcion", detectedFood.path("descripcion").asText(""));
+                foods.add(food);
+            }
+            if (foods.isEmpty()) {
+                throw new IllegalArgumentException("No se reconocieron alimentos válidos en la imagen.");
+            }
+            return Map.of("alimentos", foods);
+        } catch (Exception e) {
+            if (e instanceof WebApplicationException webApplicationException) {
+                throw webApplicationException;
+            }
+            throw new WebApplicationException("No fue posible procesar la respuesta del reconocimiento.",
+                    Response.Status.BAD_GATEWAY);
         }
     }
 }

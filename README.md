@@ -16,6 +16,8 @@ Desde `Front/`, ejecuta `flutter pub get` y `flutter run --dart-define=API_BASE_
 
 La vista de recomendaciones está en `Front/lib/recipe_recommendations_page.dart`; intégrala con `RecipeRecommendationsPage` y su función `loadRecommendations`.
 
+El reconocimiento de imagen permite revisar, editar y guardar varios alimentos detectados antes de agregarlos al inventario. Desde la pantalla de inventario también puedes crear, renombrar y eliminar categorías; no es posible borrar una categoría que aún tenga alimentos asociados.
+
 ## Proyecto Quarkus
 
 El backend usa Quarkus. Consulta <https://quarkus.io/> para las guias del framework.
