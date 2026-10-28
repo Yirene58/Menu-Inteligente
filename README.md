@@ -64,3 +64,21 @@ If you want to learn more about building native executables, please consult <htt
 Easily start your REST Web Services
 
 [Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+
+## HU4: recomendaciones de recetas
+
+La rama `feature/HU4` agrega el catálogo persistido de recetas y una vista Flutter independiente para mostrar las recomendaciones. La vista recibe una función `loadRecommendations`, de modo que la pantalla de inventario puede conectarla con su sesión y cliente HTTP actuales sin duplicar las acciones para agregar, editar o eliminar alimentos.
+
+### Base de datos
+
+Ejecuta los scripts en este orden: `01_create_database.sql`, `02_create_tables.sql`, `03_create_ingredients.sql` (de la rama de inventario) y `04_create_recipes.sql`. El script de recetas crea y carga el catálogo de forma idempotente. El backend lee los ingredientes del usuario desde `ingredientes` y las recetas desde `recetas` y `receta_ingredientes`.
+
+Configura `DB_URL`, `DB_USERNAME` y `DB_PASSWORD` si la base de datos no usa los valores locales predeterminados.
+
+### API
+
+`GET /api/sugerencias/recetas?usuarioId=1` devuelve recetas con al menos un ingrediente disponible, ordenadas por la cantidad de ingredientes de la receta presentes en el inventario. La respuesta incluye coincidencias, faltantes, porcentaje de cobertura y los ingredientes requeridos para cada receta.
+
+### Vista Flutter
+
+Importa `frontend/lib/recipe_recommendations_page.dart` y abre `RecipeRecommendationsPage(loadRecommendations: ...)`. Convierte cada objeto JSON de la respuesta con `RecipeRecommendation.fromJson`. La vista muestra estados de carga, error y lista vacía, permite actualizar al deslizar y marca ingredientes disponibles o faltantes.
