@@ -3,6 +3,8 @@ package edu.ucentral.vinni.service;
 import jakarta.ws.rs.WebApplicationException;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -14,12 +16,15 @@ class ServicioGeneracionRecetasTest {
     void interpretaUnaRespuestaDeRecetasEstructurada() throws Exception {
         var recipes = service.parseRecipes("""
                 {"recetas":[{"nombre":"Arroz con tomate","categoria":"Plato principal","minutos":25,
-                "ingredientes":[{"nombre":"arroz","cantidad":1,"unidad":"taza"}]}]}
+                "ingredientes":[{"nombre":"arroz","cantidad":1,"unidad":"taza"}],
+                "pasos":["Enjuaga el arroz.","Cocina el arroz hasta que esté tierno."]}]}
                 """);
 
         assertEquals(1, recipes.size());
         assertEquals("Arroz con tomate", recipes.getFirst().nombre());
         assertEquals("arroz", recipes.getFirst().ingredientes().getFirst().nombre());
+        assertEquals(List.of("Enjuaga el arroz.", "Cocina el arroz hasta que esté tierno."),
+                recipes.getFirst().pasos());
     }
 
     @Test
@@ -27,7 +32,8 @@ class ServicioGeneracionRecetasTest {
         String recipes = java.util.stream.IntStream.range(0, 7)
                 .mapToObj(index -> """
                         {"nombre":"Receta %d","categoria":"Plato","minutos":20,
-                        "ingredientes":[{"nombre":"arroz","cantidad":1,"unidad":"taza"}]}
+                        "ingredientes":[{"nombre":"arroz","cantidad":1,"unidad":"taza"}],
+                        "pasos":["Cocina el arroz."]}
                         """.formatted(index))
                 .collect(java.util.stream.Collectors.joining(",", "{\"recetas\":[", "]}"));
 
@@ -38,6 +44,26 @@ class ServicioGeneracionRecetasTest {
     void rechazaRecetasIncompletasDevueltasPorLaIa() {
         var exception = assertThrows(WebApplicationException.class, () -> service.parseRecipes("""
                 {"recetas":[{"nombre":"Arroz","categoria":"Plato","minutos":0,"ingredientes":[]}]}
+                """));
+
+        assertEquals(502, exception.getResponse().getStatus());
+    }
+
+    @Test
+    void rechazaRecetasSinPasosDePreparacion() {
+        var exception = assertThrows(WebApplicationException.class, () -> service.parseRecipes("""
+                {"recetas":[{"nombre":"Arroz","categoria":"Plato","minutos":20,
+                "ingredientes":[{"nombre":"arroz","cantidad":1,"unidad":"taza"}],"pasos":[]}]}
+                """));
+
+        assertEquals(502, exception.getResponse().getStatus());
+    }
+
+    @Test
+    void rechazaPasosVaciosDevueltosPorLaIa() {
+        var exception = assertThrows(WebApplicationException.class, () -> service.parseRecipes("""
+                {"recetas":[{"nombre":"Arroz","categoria":"Plato","minutos":20,
+                "ingredientes":[{"nombre":"arroz","cantidad":1,"unidad":"taza"}],"pasos":[" "]}]}
                 """));
 
         assertEquals(502, exception.getResponse().getStatus());

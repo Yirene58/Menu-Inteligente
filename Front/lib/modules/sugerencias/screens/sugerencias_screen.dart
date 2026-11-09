@@ -80,6 +80,14 @@ class _SugerenciasScreenState extends State<SugerenciasScreen> {
         .toList();
   }
 
+  List<String> _strings(Object? value) {
+    if (value is! List) return [];
+    return value
+        .whereType<String>()
+        .where((step) => step.trim().isNotEmpty)
+        .toList();
+  }
+
   String _filterLabel(Object? value) =>
       _filterLabels[value] ?? value?.toString() ?? '';
 
@@ -177,6 +185,7 @@ class _SugerenciasScreenState extends State<SugerenciasScreen> {
                           (recipe['filtrosCompatibles'] as List).isNotEmpty)
                         'Compatible: ${(recipe['filtrosCompatibles'] as List).map(_filterLabel).join(', ')}',
                     ].join('\n'),
+                    steps: _strings(recipe['pasos']),
                   ),
             ],
           ],
@@ -250,11 +259,13 @@ class _SuggestionRow extends StatelessWidget {
     required this.title,
     required this.detail,
     required this.footer,
+    this.steps = const [],
   });
 
   final String title;
   final String detail;
   final String footer;
+  final List<String> steps;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -274,6 +285,23 @@ class _SuggestionRow extends StatelessWidget {
           const SizedBox(height: 5),
           Text(footer, style: Theme.of(context).textTheme.bodySmall),
         ],
+        if (steps.isNotEmpty)
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(bottom: 8),
+            title: const Text('Ver paso a paso'),
+            children: [
+              for (var index = 0; index < steps.length; index++)
+                ListTile(
+                  dense: true,
+                  leading: CircleAvatar(
+                    radius: 14,
+                    child: Text('${index + 1}'),
+                  ),
+                  title: Text(steps[index]),
+                ),
+            ],
+          ),
       ],
     ),
   );

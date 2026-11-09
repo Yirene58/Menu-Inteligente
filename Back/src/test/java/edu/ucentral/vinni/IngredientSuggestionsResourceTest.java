@@ -35,6 +35,8 @@ class IngredientSuggestionsResourceTest {
         assertEquals(List.of("Arroz con tomate", "Ensalada de pepino"),
                 response.recetas().stream().map(IngredientSuggestionsResource.RecipeSuggestion::nombre).toList());
         assertTrue(response.recetas().getFirst().ingredientesDisponibles().contains("arroz"));
+        assertEquals(List.of("Preparar los ingredientes.", "Cocinar hasta que esté listo."),
+                response.recetas().getFirst().pasos());
         assertTrue(response.recetas().get(1).ingredientesFaltantes().stream()
                 .anyMatch(missing -> missing.nombre().equals("pepino")));
     }
@@ -135,6 +137,7 @@ class IngredientSuggestionsResourceTest {
                 20,
                 java.util.Arrays.stream(ingredients)
                         .map(ingredient -> new RecipeIngredient(ingredient, 1.0, "unidad"))
-                        .toList());
+                        .toList(),
+                List.of("Preparar los ingredientes.", "Cocinar hasta que esté listo."));
     }
 }
