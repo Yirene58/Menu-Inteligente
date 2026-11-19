@@ -1,8 +1,7 @@
 FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /app
-# Copia el pom y la carpeta src desde la subcarpeta Back
-COPY Back/pom.xml .
-COPY Back/src ./src
+COPY pom.xml .
+COPY src ./src
 RUN mvn package -DskipTests
 
 FROM eclipse-temurin:25-jre-alpine
