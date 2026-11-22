@@ -50,11 +50,12 @@ public class AuthFilter implements ContainerRequestFilter {
     }
 
     public static boolean esRutaPublica(String path) {
-        if (path == null || path.isBlank()) {
+        if (path == null) {
             return false;
         }
         String normalizado = path.startsWith("/") ? path.substring(1) : path;
-        return normalizado.equals("hello")
+        return normalizado.isEmpty()
+                || normalizado.equals("hello")
                 || normalizado.equals("auth/login")
                 || normalizado.equals("auth/register")
                 || normalizado.startsWith("q/");

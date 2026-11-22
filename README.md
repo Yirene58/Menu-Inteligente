@@ -4,7 +4,9 @@ El repositorio contiene el backend Quarkus en `Back/` y la aplicacion Flutter en
 
 ## Backend
 
-Desde PowerShell, ejecuta las pruebas con `.\Back\mvnw.cmd test` y el servidor de desarrollo con `.\Back\mvnw.cmd quarkus:dev`.
+Desde PowerShell, ejecuta las pruebas con `.\Back\mvnw.cmd test` y el servidor de desarrollo con `.\Back\mvnw.cmd quarkus:dev`. La ruta raíz `GET /` devuelve el estado HTTP del servicio; por ejemplo, abre `https://menu-inteligente-u8e9.onrender.com/` para comprobar que responde.
+
+Para permitir llamadas desde el frontend desplegado, configura en Render la variable `CORS_ORIGINS` con el origen exacto de Vercel (por ejemplo, `https://tu-proyecto.vercel.app`, sin rutas ni `/` final). Si usas un dominio propio, permite también ese origen. Tras cambiar variables de entorno, redepliega el servicio.
 
 El reconocimiento de imagen y la generación dinámica de recetas requieren `GEMINI_API_KEY` en el entorno del proceso backend. Sin esa variable, los endpoints correspondientes responden `503` y no realizan llamadas externas. Las sugerencias generadas incluyen ingredientes y pasos de preparación ordenados. Las preferencias alimentarias se guardan por cuenta. Las recetas que se muestran con filtros activos se validan conservadoramente usando sus ingredientes declarados; esto no garantiza ausencia de trazas ni contaminación cruzada.
 

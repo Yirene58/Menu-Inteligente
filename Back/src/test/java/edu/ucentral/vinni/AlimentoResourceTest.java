@@ -47,9 +47,12 @@ public class AlimentoResourceTest {
 
     @Test
     void rutasPublicasDeAutenticacion() {
+        Assertions.assertTrue(AuthFilter.esRutaPublica(""));
+        Assertions.assertTrue(AuthFilter.esRutaPublica("/"));
         Assertions.assertTrue(AuthFilter.esRutaPublica("auth/login"));
         Assertions.assertTrue(AuthFilter.esRutaPublica("/auth/register"));
         Assertions.assertTrue(AuthFilter.esRutaPublica("hello"));
+        Assertions.assertFalse(AuthFilter.esRutaPublica(null));
         Assertions.assertFalse(AuthFilter.esRutaPublica("alimentos"));
         Assertions.assertFalse(AuthFilter.esRutaPublica("alimentos/categorias"));
         Assertions.assertFalse(AuthFilter.esRutaPublica("auth/validate"));
