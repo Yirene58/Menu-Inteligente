@@ -25,6 +25,7 @@ public class ServicioGeneracionRecetas {
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
     private static final int MAX_RECIPES = 5;
     private static final int MAX_INGREDIENTS_PER_RECIPE = 30;
+    private static final int MAX_STEPS_PER_RECIPE = 20;
 
     @ConfigProperty(name = "gemini.api.key", defaultValue = "")
     String apiKey;
@@ -113,9 +114,12 @@ public class ServicioGeneracionRecetas {
         String category = requiredText(recipe, "categoria");
         JsonNode minutes = recipe.path("minutos");
         JsonNode ingredientsNode = recipe.path("ingredientes");
+        JsonNode stepsNode = recipe.path("pasos");
         if (!minutes.canConvertToInt() || minutes.asInt() < 1 || minutes.asInt() > 1440
                 || !ingredientsNode.isArray() || ingredientsNode.isEmpty()
-                || ingredientsNode.size() > MAX_INGREDIENTS_PER_RECIPE) {
+                || ingredientsNode.size() > MAX_INGREDIENTS_PER_RECIPE
+                || !stepsNode.isArray() || stepsNode.isEmpty()
+                || stepsNode.size() > MAX_STEPS_PER_RECIPE) {
             throw new WebApplicationException("El servicio de recetas devolvió una receta inválida.",
                     Response.Status.BAD_GATEWAY);
         }
@@ -130,7 +134,15 @@ public class ServicioGeneracionRecetas {
             }
             ingredients.add(new RecipeIngredient(ingredientName, quantity.asDouble(), unit));
         }
-        return new GeneratedRecipe(name, category, minutes.asInt(), List.copyOf(ingredients));
+        List<String> steps = new ArrayList<>();
+        for (JsonNode step : stepsNode) {
+            if (!step.isTextual() || step.asText().isBlank()) {
+                throw new WebApplicationException("El servicio de recetas devolvió un paso inválido.",
+                        Response.Status.BAD_GATEWAY);
+            }
+            steps.add(step.asText().trim());
+        }
+        return new GeneratedRecipe(name, category, minutes.asInt(), List.copyOf(ingredients), List.copyOf(steps));
     }
 
     private String requiredText(JsonNode node, String field) {
@@ -152,12 +164,15 @@ public class ServicioGeneracionRecetas {
                 Propón hasta 5 recetas variadas que se puedan preparar principalmente con este inventario.
                 Puedes incluir ingredientes faltantes comunes, pero lista todos los ingredientes necesarios
                 con cantidades y unidades para que el sistema identifique cuáles faltan.
+                Incluye entre 3 y 10 pasos breves, claros y ordenados para preparar cada receta.
+                Cada paso debe describir una acción concreta y tener suficiente detalle para cocinarla.
                 Usa nombres de ingredientes simples, explícitos y sin marcas; no uses categorías vagas
                 como "condimentos" o "salsa".
                 No afirmes certificaciones ni ausencia de trazas. Los criterios dietarios se validan aparte.
                 Devuelve solamente JSON con esta forma exacta:
                 {"recetas":[{"nombre":"...","categoria":"...","minutos":20,
-                "ingredientes":[{"nombre":"tomate","cantidad":2,"unidad":"unidad"}]}]}
+                "ingredientes":[{"nombre":"tomate","cantidad":2,"unidad":"unidad"}],
+                "pasos":["Lava y corta el tomate.","Cocina los ingredientes hasta que estén listos."]}]}
                 Si no hay propuestas razonables, devuelve {"recetas":[]}.
                 Preferencias: %s
                 Inventario del usuario: %s
@@ -166,11 +181,13 @@ public class ServicioGeneracionRecetas {
 
     public record PantryIngredient(String nombre, Double cantidad, String unidad) {}
     public record RecipeIngredient(String nombre, double cantidad, String unidad) {}
-    public record GeneratedRecipe(String nombre, String categoria, int minutos, List<RecipeIngredient> ingredientes) {
+    public record GeneratedRecipe(
+            String nombre, String categoria, int minutos, List<RecipeIngredient> ingredientes, List<String> pasos) {
         public GeneratedRecipe {
             nombre = nombre.trim();
             categoria = categoria.trim();
             ingredientes = List.copyOf(ingredientes);
+            pasos = List.copyOf(pasos);
         }
     }
 }

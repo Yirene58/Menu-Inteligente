@@ -188,7 +188,7 @@ public class IngredientSuggestionsResource {
         List<FiltroAlimentario> compatibleFilters = ValidadorFiltroAlimentario.compatibleFilters(requiredNames);
         String id = ValidadorFiltroAlimentario.normalize(recipe.nombre()).replace(' ', '-');
         return new RecipeSuggestion(id, recipe.nombre(), recipe.categoria(), recipe.minutos(),
-                recipe.ingredientes(), available, missing, available.size(), missing.size(), score,
+                recipe.ingredientes(), recipe.pasos(), available, missing, available.size(), missing.size(), score,
                 compatibleFilters.stream().map(Enum::name).toList());
     }
 
@@ -200,7 +200,8 @@ public class IngredientSuggestionsResource {
     public record StorageSuggestion(String ingrediente, Double cantidad, String unidad, LocalDate fechaVencimiento,
                                     int diasParaVencer, String condicion, String metodo, String instruccion) {}
     public record RecipeSuggestion(String id, String nombre, String categoria, int minutos,
-                                   List<RecipeIngredient> ingredientes, List<String> ingredientesDisponibles,
+                                   List<RecipeIngredient> ingredientes, List<String> pasos,
+                                   List<String> ingredientesDisponibles,
                                    List<MissingIngredient> ingredientesFaltantes, int coincidencias, int faltantes,
                                    int prioridadVencimiento, List<String> filtrosCompatibles) {}
     public record MissingIngredient(String nombre, double cantidad, String unidad) {}
