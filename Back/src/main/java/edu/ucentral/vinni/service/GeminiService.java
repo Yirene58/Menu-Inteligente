@@ -54,7 +54,7 @@ public class GeminiService {
             - cantidad: número estimado. Para piezas sueltas o envases usa la unidad "unidad"; \
             si la etiqueta muestra peso o volumen puedes usar kg, g, litro o ml.
             - categoriaNombre debe ser exactamente una de: Frutas, Verduras, Proteínas, Lácteos, Cereales, Otros.
-              (carnes, pescado, huevos y legumbres = Proteínas; pan, pasta, arroz, avena = Cereales).
+            - (carnes, pescado, huevos y legumbres = Proteínas; pan, pasta, arroz, avena = Cereales).
             - unidadMedida debe ser exactamente una de: unidad, kg, g, litro, ml.
             - descripcion: detalle breve útil (variedad, marca, estado), o cadena vacía.
             - confianza: número entre 0 y 1 que indica qué tan seguro estás de la identificación.
@@ -198,7 +198,7 @@ public class GeminiService {
         }
 
         if (root.path("promptFeedback").has("blockReason")) {
-            throw error(Response.Status.UNPROCESSABLE_ENTITY,
+            throw error(422,
                     "La imagen fue rechazada por el servicio de reconocimiento. Prueba con otra foto.");
         }
 
@@ -271,7 +271,7 @@ public class GeminiService {
             food.put("incierto", (Double) food.get("confianza") < UMBRAL_CONFIANZA);
         }
         if (foods.isEmpty()) {
-            throw error(Response.Status.UNPROCESSABLE_ENTITY,
+            throw error(422,
                     "No se reconocieron alimentos en la imagen. Intenta con una foto más cercana y con buena luz.");
         }
         return Map.of("alimentos", foods);
@@ -339,7 +339,11 @@ public class GeminiService {
 
     /** Excepción con cuerpo JSON {"error": "..."} para que el frontend muestre el mensaje real. */
     static WebApplicationException error(Response.Status status, String mensaje) {
-        return new WebApplicationException(mensaje, Response.status(status)
+        return error(status.getStatusCode(), mensaje);
+    }
+
+    static WebApplicationException error(int statusCode, String mensaje) {
+        return new WebApplicationException(mensaje, Response.status(statusCode)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(Map.of("error", mensaje))
                 .build());
