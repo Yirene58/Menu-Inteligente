@@ -68,11 +68,11 @@ Easily start your REST Web Services
 
 ## Reconocimiento de imagen
 
-Configura `GEMINI_API_KEY` en el entorno antes de iniciar Quarkus para habilitar el reconocimiento. No guardes la clave en este archivo ni en `application.properties`.
+Configura al menos `GROQ_API_KEY` o `GEMINI_API_KEY` antes de iniciar Quarkus para habilitar la IA. Groq es el proveedor principal y Gemini actúa como respaldo. No guardes las claves en este archivo ni en `application.properties`.
 
 ## Sugerencias y filtros alimentarios
 
-Las sugerencias de recetas se generan dinámicamente con Gemini a partir de los ingredientes enviados por la aplicación. Configura `GEMINI_API_KEY` para habilitar esta función. Las preferencias de filtrado se guardan en la cuenta mediante `GET` y `PUT /api/sugerencias/filtros`. Cuando hay varios filtros activos, una receta debe cumplir al menos uno; el backend valida conservadoramente los ingredientes declarados y descarta los que no puede clasificar. Esta validación no certifica ausencia de trazas ni contaminación cruzada.
+Las sugerencias de recetas se generan dinámicamente con Groq como proveedor principal y Gemini como respaldo a partir de los ingredientes enviados por la aplicación. Las respuestas se interpretan con validación conservadora, caché y reintentos ante errores transitorios. Las preferencias de filtrado se guardan en la cuenta mediante `GET` y `PUT /api/sugerencias/filtros`. Cuando hay varios filtros activos, una receta debe cumplir al menos uno; el backend valida los ingredientes declarados y descarta los que no puede clasificar. Esta validación no certifica ausencia de trazas ni contaminación cruzada.
 
 ## Correo SMTP
 

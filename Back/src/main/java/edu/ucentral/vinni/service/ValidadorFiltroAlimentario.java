@@ -23,6 +23,23 @@ public final class ValidadorFiltroAlimentario {
             "leche de avena", "leche de arroz", "tofu"
     );
 
+    /** Vegetales, frutas y condimentos comunes adicionales (sin gluten, lácteos ni frutos secos). */
+    private static final Set<String> EXTRA_PLANT_INGREDIENTS = Set.of(
+            "nectarina", "pera", "piña", "uva", "sandia", "melon", "papaya", "kiwi", "mora", "guayaba",
+            "maracuya", "lulo", "lechuga", "repollo", "coliflor", "apio", "cebolla morada", "cebolla larga",
+            "cebollin", "puerro", "ajo en polvo", "pimienta negra", "laurel", "romero", "arveja", "habichuela",
+            "frijol negro", "frijol rojo", "yuca", "platano verde", "platano maduro", "mazorca", "pimenton",
+            "aceite de girasol", "aceite de canola", "azucar morena", "panela", "limon verde", "lima",
+            "jugo de limon", "agua caliente", "hielo", "nuez moscada"
+    );
+
+    /** Proteínas animales sin procesar: no son veganas, pero no tienen lácteos, gluten ni frutos secos. */
+    private static final Set<String> NON_DAIRY_ANIMAL_INGREDIENTS = Set.of(
+            "huevo", "clara de huevo", "yema de huevo", "pollo", "pechuga de pollo", "muslo de pollo",
+            "carne", "carne de res", "carne molida", "res", "cerdo", "lomo de cerdo", "pavo",
+            "pescado", "filete de pescado", "atun", "salmon", "tilapia", "camaron"
+    );
+
     private static final Set<String> VEGETARIAN_INGREDIENTS = Set.of(
             "huevo", "huevos", "leche", "queso", "mantequilla", "crema", "yogur", "yogurt",
             "nata", "requeson"
@@ -86,17 +103,38 @@ public final class ValidadorFiltroAlimentario {
 
     public static boolean isCompatible(FiltroAlimentario filter, String ingredient) {
         String normalized = normalize(ingredient);
-        if (normalized.isBlank() || containsForbidden(filter, normalized)) {
+        String singular = singular(ingredient);
+        if (normalized.isBlank() || containsForbidden(filter, normalized) || containsForbidden(filter, singular)) {
             return false;
         }
+        return isKnownFor(filter, normalized) || isKnownFor(filter, singular);
+    }
+
+    private static boolean isKnownFor(FiltroAlimentario filter, String name) {
+        boolean plant = isKnown(name, PLANT_INGREDIENTS) || isKnown(name, EXTRA_PLANT_INGREDIENTS);
+        // Huevo, carnes y pescados sin procesar no contienen lácteos, gluten ni frutos secos.
+        boolean animalSinLacteos = isKnown(name, NON_DAIRY_ANIMAL_INGREDIENTS);
         return switch (filter) {
-            case VEGANO -> isKnown(normalized, PLANT_INGREDIENTS);
-            case VEGETARIANO -> isKnown(normalized, PLANT_INGREDIENTS)
-                    || isKnown(normalized, VEGETARIAN_INGREDIENTS);
-            case SIN_GLUTEN -> isKnown(normalized, GLUTEN_FREE_INGREDIENTS);
-            case SIN_LACTEOS, SIN_LACTOSA -> isKnown(normalized, PLANT_INGREDIENTS);
-            case SIN_FRUTOS_SECOS -> isKnown(normalized, NUT_FREE_INGREDIENTS);
+            case VEGANO -> plant;
+            case VEGETARIANO -> plant || isKnown(name, VEGETARIAN_INGREDIENTS);
+            case SIN_GLUTEN -> isKnown(name, GLUTEN_FREE_INGREDIENTS) || isKnown(name, EXTRA_PLANT_INGREDIENTS)
+                    || animalSinLacteos;
+            case SIN_LACTEOS, SIN_LACTOSA -> plant || animalSinLacteos;
+            case SIN_FRUTOS_SECOS -> isKnown(name, NUT_FREE_INGREDIENTS) || isKnown(name, EXTRA_PLANT_INGREDIENTS)
+                    || animalSinLacteos;
         };
+    }
+
+    /** Normaliza (minúsculas, sin tildes) y lleva cada palabra a singular de forma aproximada. */
+    public static String singular(String name) {
+        return java.util.Arrays.stream(normalize(name).split(" "))
+                .map(word -> {
+                    if (word.length() > 4 && word.endsWith("ces")) return word.substring(0, word.length() - 3) + "z";
+                    if (word.length() > 4 && word.matches(".*[lnrdj]es")) return word.substring(0, word.length() - 2);
+                    if (word.length() > 3 && word.endsWith("s")) return word.substring(0, word.length() - 1);
+                    return word;
+                })
+                .collect(java.util.stream.Collectors.joining(" "));
     }
 
     public static String normalize(String value) {

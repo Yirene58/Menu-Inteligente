@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -63,6 +64,16 @@ public class GeminiService {
             Responde únicamente con JSON.
             """;
 
+    /** Groq no admite esquema de respuesta: se describe la forma exacta en el prompt. */
+    private static final String FORMATO_JSON = """
+            Usa exactamente esta forma:
+            {"alimentos":[{"nombre":"Huevo","categoriaNombre":"Proteínas","cantidad":6,\
+            "unidadMedida":"unidad","descripcion":"","confianza":0.9}]}
+            """;
+
+    @Inject
+    GroqService groq;
+
     @ConfigProperty(name = "gemini.api.key", defaultValue = "")
     String apiKey;
 
@@ -77,14 +88,36 @@ public class GeminiService {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
+    /**
+     * Reconoce alimentos usando Groq como proveedor principal y Gemini como respaldo
+     * cuando Groq falla (saturación, límite de uso, error de formato, etc.).
+     */
     public Map<String, Object> analizarImagen(String base64Image) {
-        if (apiKey == null || apiKey.isBlank()) {
+        boolean hayGroq = groq != null && groq.configurado();
+        boolean hayGemini = apiKey != null && !apiKey.isBlank();
+        if (!hayGroq && !hayGemini) {
             throw error(Response.Status.SERVICE_UNAVAILABLE,
-                    "El servicio de reconocimiento no está configurado (falta GEMINI_API_KEY).");
+                    "El servicio de reconocimiento no está configurado (falta GROQ_API_KEY o GEMINI_API_KEY).");
         }
 
         ImagenDecodificada imagen = decodificarImagen(base64Image);
 
+        if (hayGroq) {
+            try {
+                return parsearAlimentos(groq.analizarImagenJson(PROMPT + FORMATO_JSON, imagen.mimeType(), imagen.base64()));
+            } catch (WebApplicationException e) {
+                int status = e.getResponse().getStatus();
+                // "No se reconocieron alimentos" es una respuesta válida: no se gasta cupo de Gemini.
+                if (status == 422 || !hayGemini) {
+                    throw e;
+                }
+                LOG.warnf("Groq falló al reconocer la imagen (%d: %s); usando Gemini.", status, e.getMessage());
+            }
+        }
+        return analizarConGemini(imagen);
+    }
+
+    private Map<String, Object> analizarConGemini(ImagenDecodificada imagen) {
         try {
             String jsonPayload = mapper.writeValueAsString(construirPeticion(imagen));
             String url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
@@ -97,7 +130,17 @@ public class GeminiService {
                     .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = null;
+            for (int intento = 1; intento <= 2; intento++) {
+                response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                int status = response.statusCode();
+                // Reintenta una vez ante saturación (500/503). Un 429 no se reintenta: gastaría más cupo.
+                if (!(status == 500 || status == 503) || intento == 2) {
+                    break;
+                }
+                LOG.warnf("Gemini respondió %d; reintentando.", status);
+                Thread.sleep(1500L);
+            }
 
             if (response.statusCode() != 200) {
                 LOG.errorf("Gemini respondió %d: %s", response.statusCode(), response.body());
@@ -219,16 +262,20 @@ public class GeminiService {
             throw error(Response.Status.BAD_GATEWAY,
                     "El servicio de reconocimiento no devolvió resultados. Intenta de nuevo.");
         }
+        return parsearAlimentos(texto.toString());
+    }
 
+    /** Interpreta el JSON de alimentos generado por cualquier proveedor (Groq o Gemini). */
+    Map<String, Object> parsearAlimentos(String texto) {
         JsonNode detectados;
         try {
-            JsonNode parsed = mapper.readTree(limpiarJson(texto.toString()));
+            JsonNode parsed = mapper.readTree(limpiarJson(texto));
             detectados = parsed.isArray() ? parsed : parsed.path("alimentos");
             if (!detectados.isArray() && parsed.isObject() && (parsed.has("objeto") || parsed.has("nombre"))) {
                 detectados = mapper.createArrayNode().add(parsed);
             }
         } catch (Exception e) {
-            LOG.warnf("Respuesta de Gemini no es JSON válido: %s", texto);
+            LOG.warnf("Respuesta de la IA no es JSON válido: %s", texto);
             throw error(Response.Status.BAD_GATEWAY, "No fue posible interpretar la respuesta del reconocimiento.");
         }
 
@@ -333,6 +380,7 @@ public class GeminiService {
             case 401, 403 -> "La clave de Gemini no es válida o no tiene permisos.";
             case 404 -> "El modelo de Gemini configurado no existe (revise gemini.model).";
             case 429 -> "Se superó el límite de uso del servicio de reconocimiento. Intenta en unos minutos.";
+            case 503 -> "El servicio de reconocimiento está saturado en este momento. Intenta de nuevo en unos minutos.";
             default -> "El servicio de reconocimiento no está disponible en este momento.";
         };
     }

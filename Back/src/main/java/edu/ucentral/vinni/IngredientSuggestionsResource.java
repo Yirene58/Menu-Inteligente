@@ -164,16 +164,15 @@ public class IngredientSuggestionsResource {
 
     private RecipeSuggestion recipeSuggestion(GeneratedRecipe recipe, List<Ingredient> ingredients) {
         Map<String, Ingredient> pantry = ingredients.stream().collect(Collectors.toMap(
-                ingredient -> ValidadorFiltroAlimentario.normalize(ingredient.nombre()), Function.identity(),
+                ingredient -> ValidadorFiltroAlimentario.singular(ingredient.nombre()), Function.identity(),
                 (first, later) -> first));
         List<String> available = new ArrayList<>();
         List<MissingIngredient> missing = new ArrayList<>();
         List<String> requiredNames = new ArrayList<>();
         int score = 0;
         for (RecipeIngredient required : recipe.ingredientes()) {
-            String normalizedName = ValidadorFiltroAlimentario.normalize(required.nombre());
             requiredNames.add(required.nombre());
-            Ingredient found = pantry.get(normalizedName);
+            Ingredient found = findInPantry(pantry, required.nombre());
             if (found == null) {
                 missing.add(new MissingIngredient(required.nombre(), required.cantidad(), required.unidad()));
                 continue;
@@ -190,6 +189,26 @@ public class IngredientSuggestionsResource {
         return new RecipeSuggestion(id, recipe.nombre(), recipe.categoria(), recipe.minutos(),
                 recipe.ingredientes(), recipe.pasos(), available, missing, available.size(), missing.size(), score,
                 compatibleFilters.stream().map(Enum::name).toList());
+    }
+
+    /**
+     * Busca el ingrediente tolerando plurales y nombres más específicos
+     * ("Huevos" / "huevo", "Tomate chonto" / "tomate").
+     */
+    static Ingredient findInPantry(Map<String, Ingredient> pantry, String requiredName) {
+        String key = ValidadorFiltroAlimentario.singular(requiredName);
+        Ingredient exact = pantry.get(key);
+        if (exact != null || key.isEmpty()) {
+            return exact;
+        }
+        String padded = " " + key + " ";
+        return pantry.entrySet().stream()
+                .filter(entry -> !entry.getKey().isEmpty())
+                .filter(entry -> (" " + entry.getKey() + " ").contains(padded)
+                        || padded.contains(" " + entry.getKey() + " "))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
     }
 
     public record SuggestionsRequest(LocalDate fechaActual, List<IngredientInput> ingredientes) {}
