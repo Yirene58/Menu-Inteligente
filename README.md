@@ -14,7 +14,7 @@ El catálogo de recetas y la despensa usan PostgreSQL. Configura `DB_URL`, `DB_U
 
 ## Frontend
 
-Desde `Front/`, ejecuta `flutter pub get` y `flutter run --dart-define=API_BASE_URL=http://localhost:8080`. Para dispositivos fisicos, configura `API_BASE_URL` con la direccion del equipo que ejecuta Quarkus.
+El frontend usa `https://menu-inteligente-u8e9.onrender.com` como backend por defecto. Desde `Front/`, ejecuta `flutter pub get` y `flutter run --dart-define=API_BASE_URL=http://localhost:8080` para desarrollo local. Para dispositivos fisicos, configura `API_BASE_URL` con la direccion del equipo que ejecuta Quarkus.
 
 La vista de recomendaciones está en `Front/lib/recipe_recommendations_page.dart`; intégrala con `RecipeRecommendationsPage` y su función `loadRecommendations`.
 

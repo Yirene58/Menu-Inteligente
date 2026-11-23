@@ -3,7 +3,7 @@ class ApiConfig {
   // Para un dispositivo físico, use la IP de la máquina que ejecuta Quarkus.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8080',
+    defaultValue: 'https://menu-inteligente-u8e9.onrender.com',
   );
 
   // Endpoint de autenticación
