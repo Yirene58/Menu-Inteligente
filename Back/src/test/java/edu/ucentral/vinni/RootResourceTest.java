@@ -12,10 +12,10 @@ class RootResourceTest {
     @Test
     void rootReturnsServiceStatus() {
         given()
-          .when().get("/")
-          .then()
-             .statusCode(200)
-             .body("service", is("menu-inteligente-api"))
-             .body("status", is("running"));
+            .when().get("/")
+            .then()
+                .statusCode(200)
+                .body("service", is("menu-inteligente-api"))
+                .body("status", is("running"));
     }
 }
